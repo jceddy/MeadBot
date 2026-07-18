@@ -29,6 +29,8 @@ MeadBot uses prefix commands (default prefix: `!`, configurable via `PREFIX` in 
 - `src/commands/` - One file per command, each exporting `{ name, description, execute(message, args, client) }`.
 - `src/events/` - One file per Discord.js event, each exporting `{ name, once, execute(...args, client) }`.
 - `src/handlers/` - Loads commands and events at startup.
+- `src/calculator/` - Mead-brewing calculator functions and constants (unit conversions, ABV, calories, Delle number, etc.), independent of Discord.js.
+- `test/` - Unit tests, run with `npm test`.
 
 ### Adding a command
 
@@ -37,3 +39,10 @@ Add a new file to `src/commands/` exporting `{ name, description, execute(messag
 ### Adding an event
 
 Add a new file to `src/events/` exporting `{ name, once, execute(...args, client) }`. It's picked up automatically on startup.
+
+## Development
+
+- `npm test` - Run the unit test suite (Node's built-in test runner).
+- `npm run lint` - Check for lint errors.
+- `npm run lint:fix` - Auto-fix lint errors where possible.
+- `npm run format` - Format the codebase with Prettier.
