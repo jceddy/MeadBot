@@ -4,6 +4,10 @@ Discord bot to help make Mead.
 
 ## Setup
 
+Requires Node.js 18 or newer (discord.js v14's dependencies use syntax that doesn't parse on
+older versions — this will otherwise fail with a cryptic `SyntaxError` deep inside
+`node_modules` rather than a clear version-mismatch error).
+
 1. Install dependencies:
    ```
    npm install
