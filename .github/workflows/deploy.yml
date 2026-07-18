@@ -1,0 +1,61 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+      # Reinstall without devDependencies/optionalDependencies for the deployed bundle.
+      # --omit=optional drops ws's optional native add-ons (bufferutil, utf-8-validate);
+      # node_modules is built here and uploaded as-is, so it must run on whatever OS/arch
+      # the target host is -- ws falls back to a pure-JS implementation without them.
+      - run: npm ci --omit=dev --omit=optional
+
+      - name: Write .env
+        run: |
+          echo "DISCORD_TOKEN=${{ secrets.AUTH_TOKEN }}" > .env
+          echo "PREFIX=!" >> .env
+
+      # local_path is a shell glob and does not match dotfiles, so .env is deployed
+      # separately below by exact filename. sftp_only assumes SFTP_DIR already exists
+      # on the host -- this mode does not create the remote directory.
+      - name: Deploy application files
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+        with:
+          username: ${{ secrets.SFTP_USERNAME }}
+          server: ${{ secrets.SFTP_HOST }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          port: 22
+          local_path: './*'
+          remote_path: ${{ secrets.SFTP_DIR }}
+          sftp_only: true
+
+      - name: Deploy .env
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+        with:
+          username: ${{ secrets.SFTP_USERNAME }}
+          server: ${{ secrets.SFTP_HOST }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          port: 22
+          local_path: './.env'
+          remote_path: ${{ secrets.SFTP_DIR }}
+          sftp_only: true
