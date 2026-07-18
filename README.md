@@ -44,7 +44,7 @@ loaded commands, so it's always accurate. Highlights:
   `!list-yeast-requirements`.
 - Community/fun: `!cat`, `!dog`, `!slug`, `!quip`, `!suggest`, and a handful of image/link
   commands (`!kahm`, `!yeet`, `!closure`, `!bees`, `!taco`, etc).
-- Info: `!wiki`, `!doc`, `!recipes`, `!mmm`, `!eligibility`, `!version`.
+- Info: `!wiki`, `!doc`, `!recipes`, `!mmm`, `!eligibility`, `!version`, `!funding`.
 - Admin: `!stop`.
 
 Each calculator command supports `-h`/`--help` (optionally `-h all` for the full usage string).
