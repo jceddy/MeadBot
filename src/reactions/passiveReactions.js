@@ -105,18 +105,20 @@ async function handlePassiveReactions(message) {
       await message.react(config.emoji.easterEggReact);
     }
   } else if (messageLower.includes(' esters')) {
+    // originally 6 images hotlinked from Discord's CDN; those links have since expired.
+    // These 5 were recovered and are now served as local attachments instead.
     const ESTERS_IMAGES = {
-      1: 'https://cdn.discordapp.com/attachments/808990352937451540/852913140068253727/image0.jpg',
-      2: 'https://cdn.discordapp.com/attachments/808990352937451540/852924218130694224/image0.jpg',
-      3: 'https://cdn.discordapp.com/attachments/808990352937451540/852931631575859212/image0.jpg',
-      4: 'https://cdn.discordapp.com/attachments/808990352937451540/852949830962905088/esters.png',
-      5: 'https://media.discordapp.net/attachments/628682183392886795/865649897112600606/esters-1.PNG',
-      6: 'https://media.discordapp.net/attachments/628682183392886795/865649915718664222/esters-2.PNG',
+      1: 'esters-ballmer.jpg',
+      2: 'esters-braveheart.jpg',
+      3: 'esters-krystenritter.jpg',
+      4: 'esters-whisper.png',
+      5: 'esters-ancientaliens.png',
     };
-    const imageUrl = ESTERS_IMAGES[CalculatorAPI.RandomInteger(100)];
-    if (imageUrl) {
-      const embed = new EmbedBuilder().setImage(imageUrl);
-      await message.channel.send({ embeds: [embed] });
+    const imageFile = ESTERS_IMAGES[CalculatorAPI.RandomInteger(100)];
+    if (imageFile) {
+      const attachment = new AttachmentBuilder(mediaPath(imageFile), { name: imageFile });
+      const embed = new EmbedBuilder().setImage('attachment://' + imageFile);
+      await message.channel.send({ embeds: [embed], files: [attachment] });
     }
   }
 }

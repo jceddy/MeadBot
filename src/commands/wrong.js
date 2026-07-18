@@ -1,13 +1,13 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const mediaPath = require('../utils/mediaPath.js');
 
 module.exports = {
   name: 'wrong',
   aliases: ['someoneiswrong'],
   description: 'Someone is wrong on the internet.',
   execute(message) {
-    const embed = new EmbedBuilder().setImage(
-      'https://cdn.discordapp.com/attachments/808990352937451540/849857593022218270/Someoneiswrongoninternet.png'
-    );
-    message.channel.send({ embeds: [embed] });
+    const attachment = new AttachmentBuilder(mediaPath('someoneiswrong.png'), { name: 'someoneiswrong.png' });
+    const embed = new EmbedBuilder().setImage('attachment://someoneiswrong.png');
+    message.channel.send({ embeds: [embed], files: [attachment] });
   },
 };
