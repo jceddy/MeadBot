@@ -506,21 +506,19 @@ module.exports = {
         return;
     }
 
-    const batchSpecsEmbed = new EmbedBuilder()
-      .setTitle('Batch Specs')
-      .addFields(
-        {
-          name: 'Total Volume',
-          value: volume.toFixed(2) + (units === Constants.UNITS.US ? ' gallon(s)' : ' liter(s)'),
-          inline: true,
-        },
-        { name: 'Estimated ABV', value: yeastAbv.toFixed(2) + '%', inline: true },
-        { name: 'Target OG', value: og.toFixed(3), inline: true },
-        { name: 'Target FG', value: residualSugar.toFixed(3), inline: true },
-        { name: 'YAN Requirement', value: Constants.YAN_REQUIREMENT_STRING[yanRequirement], inline: true },
-        { name: 'YAN Provided', value: (nut.nitrogen + gofermYanContribution).toFixed(1), inline: true },
-        { name: 'Nutrient Regimen', value: Constants.NUTRIENT_REGIMEN_STRING[nutrientRegimen], inline: true }
-      );
+    const batchSpecsEmbed = new EmbedBuilder().setTitle('Batch Specs').addFields(
+      {
+        name: 'Total Volume',
+        value: volume.toFixed(2) + (units === Constants.UNITS.US ? ' gallon(s)' : ' liter(s)'),
+        inline: true,
+      },
+      { name: 'Estimated ABV', value: yeastAbv.toFixed(2) + '%', inline: true },
+      { name: 'Target OG', value: og.toFixed(3), inline: true },
+      { name: 'Target FG', value: residualSugar.toFixed(3), inline: true },
+      { name: 'YAN Requirement', value: Constants.YAN_REQUIREMENT_STRING[yanRequirement], inline: true },
+      { name: 'YAN Provided', value: (nut.nitrogen + gofermYanContribution).toFixed(1), inline: true },
+      { name: 'Nutrient Regimen', value: Constants.NUTRIENT_REGIMEN_STRING[nutrientRegimen], inline: true }
+    );
     if (gofermYanContribution > 0) {
       batchSpecsEmbed.addFields({
         name: 'Go-Ferm YAN Contribution',

@@ -1,4 +1,5 @@
 # MeadBot
+
 Discord bot to help make Mead.
 
 ## Setup
@@ -8,9 +9,11 @@ Discord bot to help make Mead.
    npm install
    ```
 2. Copy `.env.example` to `.env` and fill in your bot token:
+
    ```
    cp .env.example .env
    ```
+
    By default, MeadBot's moderation and passive-reaction features (see below) are configured
    for its original home server. Set `HONEYPOT_CHANNEL_ID` to enable the honeypot moderation
    feature (it's disabled by default), and override the other IDs in `.env` to run on a
@@ -19,6 +22,7 @@ Discord bot to help make Mead.
    In the [Discord Developer Portal](https://discord.com/developers/applications), enable the
    **Server Members Intent** and **Message Content Intent** for your bot application — MeadBot
    needs both.
+
 3. Start the bot:
    ```
    npm start
@@ -36,7 +40,7 @@ loaded commands, so it's always accurate. Highlights:
   `!list-yeast-requirements`.
 - Community/fun: `!cat`, `!dog`, `!slug`, `!quip`, `!suggest`, and a handful of image/link
   commands (`!kahm`, `!yeet`, `!closure`, `!bees`, `!taco`, etc).
-- Info: `!wiki`, `!doc`, `!recipes`, `!mmm`, `!eligibility`.
+- Info: `!wiki`, `!doc`, `!recipes`, `!mmm`, `!eligibility`, `!version`.
 - Admin: `!stop`.
 
 Each calculator command supports `-h`/`--help` (optionally `-h all` for the full usage string).
@@ -50,6 +54,18 @@ Beyond commands, MeadBot also (both configurable/disableable via `.env`, see abo
 - Runs a daily job that deletes old messages from its own admin/spam channels.
 - Reacts or replies to certain keywords/phrases in messages (scoped to the configured guild
   where noted in `src/reactions/passiveReactions.js`).
+- Watches `version.json` for changes (checked roughly every 4 seconds) and exits if it differs
+  from the version loaded at startup, so a deploy that updates `version.json` triggers a
+  restart under the systemd service. See `!version` and [Versioning](#versioning) below.
+
+## Versioning
+
+`version.json` at the repo root holds the app's running version, e.g. `{ "version": "2.0.0" }`.
+It's intentionally separate from `package.json`'s version, since its only purpose is to signal
+the running process to restart — bump it as part of a release when you want a live deploy to
+pick up new code (the systemd service must be configured to restart the process on exit for
+this to work; MeadBot itself only exits, it doesn't restart itself). `!version` reports the
+version that was loaded at startup.
 
 ## Project structure
 
@@ -63,8 +79,9 @@ Beyond commands, MeadBot also (both configurable/disableable via `.env`, see abo
 - `src/calculator/` - Mead-brewing calculator functions and constants (unit conversions, ABV,
   calories, Delle number, nutrient-schedule math, blending math), independent of Discord.js.
 - `src/data/` - Static content (facts, chef quips, presence activities).
-- `src/jobs/` - Background work: the old-message cleanup job and the contest-eligibility
-  message-counting helper.
+- `src/jobs/` - Background work: the old-message cleanup job, the version-file watcher, and the
+  contest-eligibility message-counting helper.
+- `src/version.js` - Reads `version.json`.
 - `src/moderation/` - The honeypot-channel auto-ban logic.
 - `src/reactions/` - Passive (non-command) keyword-triggered reactions.
 - `src/utils/` - Small shared helpers (media file paths, message chunking, DM/notify helpers).

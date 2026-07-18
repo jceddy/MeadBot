@@ -1096,17 +1096,15 @@ module.exports = {
     }
 
     const additionalSugarEmbeds = (additionalSugars || []).map((sugar) =>
-      new EmbedBuilder()
-        .setTitle('Additional Sugar')
-        .addFields(
-          { name: 'Type', value: Constants.SUGAR_SOURCE_INFO[sugar.type].name, inline: true },
-          {
-            name: 'Quantity',
-            value: sugar.quantity_amount.toFixed(3) + ' ' + Constants.HONEY_UNIT_INFO[sugar.quantity_units].name,
-            inline: true,
-          },
-          { name: 'Sugar Content', value: sugar.sugar_content.toFixed(2) + '%', inline: true }
-        )
+      new EmbedBuilder().setTitle('Additional Sugar').addFields(
+        { name: 'Type', value: Constants.SUGAR_SOURCE_INFO[sugar.type].name, inline: true },
+        {
+          name: 'Quantity',
+          value: sugar.quantity_amount.toFixed(3) + ' ' + Constants.HONEY_UNIT_INFO[sugar.quantity_units].name,
+          inline: true,
+        },
+        { name: 'Sugar Content', value: sugar.sugar_content.toFixed(2) + '%', inline: true }
+      )
     );
 
     const yeastEmbed = new EmbedBuilder()
