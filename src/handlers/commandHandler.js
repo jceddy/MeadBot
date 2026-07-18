@@ -8,5 +8,8 @@ module.exports = (client) => {
   for (const file of commandFiles) {
     const command = require(path.join(commandsPath, file));
     client.commands.set(command.name, command);
+    for (const alias of command.aliases || []) {
+      client.commands.set(alias, command);
+    }
   }
 };
