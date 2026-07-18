@@ -59,6 +59,7 @@ module.exports = {
     documentation: process.env.DOCUMENTATION_URL || 'https://www.jceddy.com/meadbot/MeadBot%20Documentation.pdf',
     monkImage: process.env.MONK_IMAGE_URL || 'https://www.jceddy.com/meadbot/monk.jpg',
     paddlinImage: process.env.PADDLIN_IMAGE_URL || 'https://www.jceddy.com/images/paddlin.jpg',
+    funding: process.env.FUNDING_URL || 'https://buymeacoffee.com/jceddy',
   },
 
   moderation: {
