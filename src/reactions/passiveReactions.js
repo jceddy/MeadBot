@@ -107,15 +107,16 @@ async function handlePassiveReactions(message) {
   } else if (messageLower.includes(' esters')) {
     // originally 6 images hotlinked from Discord's CDN; those links have since expired.
     // These 5 were recovered and are now served as local attachments instead.
-    const ESTERS_IMAGES = {
-      1: 'esters-ballmer.jpg',
-      2: 'esters-braveheart.jpg',
-      3: 'esters-krystenritter.jpg',
-      4: 'esters-whisper.png',
-      5: 'esters-ancientaliens.png',
-    };
-    const imageFile = ESTERS_IMAGES[CalculatorAPI.RandomInteger(100)];
-    if (imageFile) {
+    const ESTERS_IMAGES = [
+      'esters-ballmer.jpg',
+      'esters-braveheart.jpg',
+      'esters-krystenritter.jpg',
+      'esters-whisper.png',
+      'esters-ancientaliens.png',
+    ];
+    // fires roughly 1 in 5 times (20%); the image is then picked uniformly at random
+    if (CalculatorAPI.RandomInteger(5) === 0) {
+      const imageFile = ESTERS_IMAGES[CalculatorAPI.RandomInteger(ESTERS_IMAGES.length)];
       const attachment = new AttachmentBuilder(mediaPath(imageFile), { name: imageFile });
       const embed = new EmbedBuilder().setImage('attachment://' + imageFile);
       await message.channel.send({ embeds: [embed], files: [attachment] });
