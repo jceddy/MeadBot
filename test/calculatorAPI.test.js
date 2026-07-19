@@ -202,3 +202,32 @@ describe('MakeHoursString', () => {
     assert.equal(CalculatorAPI.MakeHoursString(24), '24 Hours');
   });
 });
+
+describe('ListVolumeUnits', () => {
+  it('lists every VOLUME_UNITS entry with its display name, lowercased key first', () => {
+    const list = CalculatorAPI.ListVolumeUnits();
+
+    assert.equal(list.length, Object.keys(CalculatorAPI.Constants.VOLUME_UNITS).length);
+    assert.deepEqual(list[0], { unit: 'liters', name: 'Liter(s)' });
+    assert.deepEqual(
+      list.find((entry) => entry.unit === 'gallons_us'),
+      { unit: 'gallons_us', name: 'Gallon(s) US' }
+    );
+  });
+});
+
+describe('ListYeastRequirements', () => {
+  it('lists every YAN_REQUIREMENT_BY_YEAST entry with its human-readable requirement', () => {
+    const list = CalculatorAPI.ListYeastRequirements();
+
+    assert.equal(list.length, Object.keys(CalculatorAPI.Constants.YAN_REQUIREMENT_BY_YEAST).length);
+    assert.deepEqual(
+      list.find((entry) => entry.yeast === 'Lalvin 71B'),
+      { yeast: 'Lalvin 71B', requirement: 'Low' }
+    );
+    assert.deepEqual(
+      list.find((entry) => entry.yeast === 'Kveik'),
+      { yeast: 'Kveik', requirement: 'Kveik' }
+    );
+  });
+});

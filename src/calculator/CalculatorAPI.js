@@ -929,3 +929,23 @@ exports.MakeHoursString = function (timing, break3) {
     return timing + ' Hours';
   }
 };
+
+// ListVolumeUnits() - list all recognized volume unit names paired with their display name
+exports.ListVolumeUnits = function () {
+  return Object.keys(exports.Constants.VOLUME_UNITS).map(function (unit) {
+    return {
+      unit: unit.toLowerCase(),
+      name: exports.Constants.VOLUME_UNIT_INFO[exports.Constants.VOLUME_UNITS[unit]].name,
+    };
+  });
+};
+
+// ListYeastRequirements() - list known yeasts paired with their YAN requirement
+exports.ListYeastRequirements = function () {
+  return Object.keys(exports.Constants.YAN_REQUIREMENT_BY_YEAST).map(function (yeast) {
+    return {
+      yeast: yeast,
+      requirement: exports.Constants.YAN_REQUIREMENT_STRING[exports.Constants.YAN_REQUIREMENT_BY_YEAST[yeast]],
+    };
+  });
+};
