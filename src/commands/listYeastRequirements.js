@@ -5,12 +5,7 @@ module.exports = {
   name: 'list-yeast-requirements',
   description: 'Lists known yeasts and their YAN requirement.',
   async execute(message) {
-    const lines = Object.keys(CalculatorAPI.Constants.YAN_REQUIREMENT_BY_YEAST).map(
-      (yeast) =>
-        yeast +
-        ': ' +
-        CalculatorAPI.Constants.YAN_REQUIREMENT_STRING[CalculatorAPI.Constants.YAN_REQUIREMENT_BY_YEAST[yeast]]
-    );
+    const lines = CalculatorAPI.ListYeastRequirements().map((entry) => entry.yeast + ': ' + entry.requirement);
     for (const chunk of chunkLines(lines)) {
       await message.channel.send(chunk);
     }

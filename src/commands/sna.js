@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const CalculatorAPI = require('../calculator/CalculatorAPI.js');
-const { getAdvancedNutrients } = require('../calculator/NutrientCalculator.js');
+const { calculateNutrients } = require('../calculator/NutrientCalculator.js');
 const Constants = CalculatorAPI.Constants;
 
 const HELP_TEXT = {
@@ -214,16 +214,7 @@ module.exports = {
       }
     }
 
-    let gofermYanContribution = 0;
-    if (gofermGrams > 0) {
-      gofermYanContribution =
-        units === Constants.UNITS.US
-          ? Math.floor((gofermGrams * gofermYan) / (volume * 3.784))
-          : Math.floor((gofermGrams * gofermYan) / volume);
-      yan -= gofermYanContribution;
-    }
-
-    const nutrients = getAdvancedNutrients(
+    const nutrients = calculateNutrients({
       units,
       volume,
       yan,
@@ -235,10 +226,12 @@ module.exports = {
       yanRatioDap,
       yanRatioFermK,
       yanRatioFermO,
-      [24, 48, 72, 'break'],
       fermKYan,
-      fillFkFirst
-    );
+      fillFkFirst,
+      gofermYan,
+      gofermGrams,
+    });
+    const gofermYanContribution = nutrients.gofermYanContribution;
 
     const batchInfoEmbed = new EmbedBuilder().setTitle('Batch Info').addFields(
       { name: 'Total YAN', value: String(nutrients.yan + gofermYanContribution), inline: true },

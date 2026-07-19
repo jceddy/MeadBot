@@ -6,12 +6,7 @@ module.exports = {
   aliases: ['list-volumes'],
   description: 'Lists recognized volume unit names.',
   async execute(message) {
-    const lines = Object.keys(CalculatorAPI.Constants.VOLUME_UNITS).map(
-      (unit) =>
-        unit.toLowerCase() +
-        ': ' +
-        CalculatorAPI.Constants.VOLUME_UNIT_INFO[CalculatorAPI.Constants.VOLUME_UNITS[unit]].name
-    );
+    const lines = CalculatorAPI.ListVolumeUnits().map((entry) => entry.unit + ': ' + entry.name);
     for (const chunk of chunkLines(lines)) {
       await message.channel.send(chunk);
     }

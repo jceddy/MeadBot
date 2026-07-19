@@ -459,6 +459,70 @@ function makeNutString(addition) {
   return parts.length > 0 ? parts.join('\n') : 'No nutrients required.';
 }
 
+// yanContributionFromGrams(grams, yanPpm, volumeInLiters) - ppm YAN contributed by adding a
+// nutrient source (e.g. Go-Ferm) of the given YAN concentration (in parts per million) to a must
+// of the given volume, in grams added
+function yanContributionFromGrams(grams, yanPpm, volumeInLiters) {
+  if (grams <= 0) {
+    return 0;
+  }
+  return Math.floor((grams * yanPpm) / volumeInLiters);
+}
+
+// calculateNutrients(options) - orchestrates !calculate-nutrients' full computation (Go-Ferm YAN
+// contribution, then a staggered-nutrient-addition schedule fixed at [24, 48, 72, 'break']) from
+// already-parsed/defaulted options:
+//  - units - Constants.UNITS.US or Constants.UNITS.METRIC
+//  - volume - must volume, in gallons (US) or liters (METRIC)
+//  - yan - target total YAN (ppm), before any Go-Ferm contribution is subtracted
+//  - fermOEffectiveness, enforceLimits, dapLimit, fermKLimit, fermOLimit, yanRatioDap,
+//    yanRatioFermK, yanRatioFermO, fermKYan, fillFkFirst - passed through to getAdvancedNutrients
+//  - gofermYan - YAN (ppm) provided by the Go-Ferm product in use
+//  - gofermGrams - grams of Go-Ferm already accounted for elsewhere (e.g. for rehydration); its
+//    YAN contribution is subtracted from yan before computing the nutrient schedule
+// Returns getAdvancedNutrients' result plus a top-level gofermYanContribution field.
+function calculateNutrients(options) {
+  const {
+    units,
+    volume,
+    yan,
+    fermOEffectiveness,
+    enforceLimits,
+    dapLimit,
+    fermKLimit,
+    fermOLimit,
+    yanRatioDap,
+    yanRatioFermK,
+    yanRatioFermO,
+    fermKYan,
+    fillFkFirst,
+    gofermYan,
+    gofermGrams,
+  } = options;
+
+  const volumeInLiters = units === Constants.UNITS.US ? volume * 3.784 : volume;
+  const gofermYanContribution = yanContributionFromGrams(gofermGrams, gofermYan, volumeInLiters);
+
+  const nutrients = getAdvancedNutrients(
+    units,
+    volume,
+    yan - gofermYanContribution,
+    fermOEffectiveness,
+    enforceLimits,
+    dapLimit,
+    fermKLimit,
+    fermOLimit,
+    yanRatioDap,
+    yanRatioFermK,
+    yanRatioFermO,
+    [24, 48, 72, 'break'],
+    fermKYan,
+    fillFkFirst
+  );
+
+  return { ...nutrients, gofermYanContribution };
+}
+
 module.exports = {
   hoCalc,
   getGoferm,
@@ -470,4 +534,6 @@ module.exports = {
   getYanRatio,
   getAdvancedNutrients,
   makeNutString,
+  yanContributionFromGrams,
+  calculateNutrients,
 };
