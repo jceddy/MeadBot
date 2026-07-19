@@ -37,9 +37,8 @@ module.exports = {
     let fg = 0.998;
     let abv = 14.37;
 
-    let inputOg = og;
-    let inputFg = fg;
-    let inputAbv = abv;
+    let ogSpecified = false;
+    let abvSpecified = false;
 
     if (args.length === 0) {
       args = ['-h', 'all'];
@@ -58,33 +57,15 @@ module.exports = {
           let to;
           if (argValue === 'sg') {
             to = Constants.GRAVITY_UNITS.SG;
-            if (inputOg === og) {
-              inputOg = tmp;
-            }
             og = tmp;
-            if (inputFg === fg) {
-              inputFg = tmp2;
-            }
             fg = tmp2;
           } else if (argValue === 'brix') {
             to = Constants.GRAVITY_UNITS.BRIX;
-            if (inputOg === og) {
-              inputOg = CalculatorAPI.ConvertSGToBrix(tmp);
-            }
             og = CalculatorAPI.ConvertSGToBrix(tmp);
-            if (inputFg === fg) {
-              inputFg = CalculatorAPI.ConvertSGToBrix(tmp2);
-            }
             fg = CalculatorAPI.ConvertSGToBrix(tmp2);
           } else if (argValue === 'baume') {
             to = Constants.GRAVITY_UNITS.BAUME;
-            if (inputOg === og) {
-              inputOg = Gravity.SGToBaume(tmp);
-            }
             og = Gravity.SGToBaume(tmp);
-            if (inputFg === fg) {
-              inputFg = Gravity.SGToBaume(tmp2);
-            }
             fg = Gravity.SGToBaume(tmp2);
           } else {
             message.channel.send('Unknown gravity units: ' + argValue);
@@ -99,17 +80,11 @@ module.exports = {
           if (argValue === 'abv') {
             if (abvUnits === Constants.ABV_UNITS.ABW) {
               abvUnits = Constants.ABV_UNITS.ABV;
-              if (inputAbv === abv) {
-                inputAbv = Gravity.ABWToABV(abv);
-              }
               abv = Gravity.ABWToABV(abv);
             }
           } else if (argValue === 'abw') {
             if (abvUnits === Constants.ABV_UNITS.ABV) {
               abvUnits = Constants.ABV_UNITS.ABW;
-              if (inputAbv === abv) {
-                inputAbv = Gravity.ABVToABW(abv);
-              }
               abv = Gravity.ABVToABW(abv);
             }
           } else {
@@ -119,16 +94,17 @@ module.exports = {
           break;
         case '-o':
         case '--original_gravity':
-          inputOg = parseFloat(argValue);
-          if (isNaN(inputOg)) {
+          og = parseFloat(argValue);
+          if (isNaN(og)) {
             message.channel.send('Original gravity is not a number: ' + argValue);
             return;
           }
+          ogSpecified = true;
           break;
         case '-f':
         case '--final_gravity':
-          inputFg = parseFloat(argValue);
-          if (isNaN(inputFg)) {
+          fg = parseFloat(argValue);
+          if (isNaN(fg)) {
             message.channel.send('Final gravity is not a number: ' + argValue);
             return;
           }
@@ -136,11 +112,12 @@ module.exports = {
         case '-a':
         case '--abv':
         case '--abw':
-          inputAbv = parseFloat(argValue);
-          if (isNaN(inputAbv)) {
+          abv = parseFloat(argValue);
+          if (isNaN(abv)) {
             message.channel.send('ABV/ABW is not a number: ' + argValue);
             return;
           }
+          abvSpecified = true;
           break;
         case '-h':
         case '--help':
@@ -149,17 +126,7 @@ module.exports = {
       }
     }
 
-    const ogSpecified = inputOg !== og;
-    const abvSpecified = inputAbv !== abv;
-    ({ og, fg, abv } = Gravity.resolveGravityAbvTrio(
-      gravityUnits,
-      abvUnits,
-      inputOg,
-      inputFg,
-      inputAbv,
-      ogSpecified,
-      abvSpecified
-    ));
+    ({ og, fg, abv } = Gravity.resolveGravityAbvTrio(gravityUnits, abvUnits, og, fg, abv, ogSpecified, abvSpecified));
 
     const embed = new EmbedBuilder().setTitle('Potential Alcohol Conversion').addFields(
       {

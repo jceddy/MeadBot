@@ -167,15 +167,16 @@ function stormSGtoYAN(sgDelta, yanRequirement) {
 //  - only og specified (or og+fg) -> solve abv
 //  - otherwise -> solve og (from fg and abv)
 // Extracted from !potential-alcohol's original implementation (same formulas, same branch
-// selection), with one behavior fix: the "solve fg" and "solve og" branches now convert their
-// gravityUnits input to SG before using it in the SG-space delta computation (the "solve abv"
-// branch already did this correctly), which previously produced incorrect results for BRIX/BAUME
-// combined with those two branches (e.g. og=25 BRIX + abv=14% used to compute fg as
-// "1734301.697"). One quirk of the original command is intentionally still preserved: a supplied
-// og/abv value that happens to equal the command's own default must be flagged as
-// ogSpecified/abvSpecified = false by the caller to match original behavior, since the original
-// command detected "specified" by comparing against its defaults rather than tracking whether the
-// flag was passed.
+// selection), with two behavior fixes: (1) the "solve fg" and "solve og" branches now convert
+// their gravityUnits input to SG before using it in the SG-space delta computation (the "solve
+// abv" branch already did this correctly), which previously produced incorrect results for
+// BRIX/BAUME combined with those two branches (e.g. og=25 BRIX + abv=14% used to compute fg as
+// "1734301.697"); (2) ogSpecified/abvSpecified are now expected to be real "was this flag passed"
+// booleans tracked by the caller, rather than "does this differ from the caller's default" —
+// pot.js previously detected "specified" the latter way, which silently ignored an explicitly
+// supplied og/abv that happened to equal the command's own default (e.g.
+// "-o 1.108 -f 0.990" would silently overwrite the user's stated og instead of solving abv from
+// it, since 1.108 is also og's default).
 function resolveGravityAbvTrio(gravityUnits, abvUnits, og, fg, abv, ogSpecified, abvSpecified) {
   let resultOg = og;
   let resultFg = fg;
