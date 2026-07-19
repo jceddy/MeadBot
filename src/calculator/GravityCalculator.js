@@ -166,17 +166,16 @@ function stormSGtoYAN(sgDelta, yanRequirement) {
 //  - og and abv specified -> solve fg
 //  - only og specified (or og+fg) -> solve abv
 //  - otherwise -> solve og (from fg and abv)
-// Extracted verbatim (same formulas, same branch selection) from !potential-alcohol's original
-// implementation, so it intentionally reproduces two long-standing quirks of that command:
-//  1. A supplied og/abv value that happens to equal the command's own default must be flagged as
-//     ogSpecified/abvSpecified = false by the caller to match original behavior, since the
-//     original command detected "specified" by comparing against its defaults rather than
-//     tracking whether the flag was passed.
-//  2. When gravityUnits is not SG, the "solve fg" and "solve og" branches use the og/fg input
-//     directly in the SG-space delta computation without first converting it to SG (only the
-//     "solve abv" branch does this correctly), which produces incorrect results for BRIX/BAUME
-//     combined with those two branches. This is a known bug, preserved here for parity with the
-//     live command; see MeadBotAPI's potential-alcohol endpoint for a corrected implementation.
+// Extracted from !potential-alcohol's original implementation (same formulas, same branch
+// selection), with one behavior fix: the "solve fg" and "solve og" branches now convert their
+// gravityUnits input to SG before using it in the SG-space delta computation (the "solve abv"
+// branch already did this correctly), which previously produced incorrect results for BRIX/BAUME
+// combined with those two branches (e.g. og=25 BRIX + abv=14% used to compute fg as
+// "1734301.697"). One quirk of the original command is intentionally still preserved: a supplied
+// og/abv value that happens to equal the command's own default must be flagged as
+// ogSpecified/abvSpecified = false by the caller to match original behavior, since the original
+// command detected "specified" by comparing against its defaults rather than tracking whether the
+// flag was passed.
 function resolveGravityAbvTrio(gravityUnits, abvUnits, og, fg, abv, ogSpecified, abvSpecified) {
   let resultOg = og;
   let resultFg = fg;
@@ -186,7 +185,8 @@ function resolveGravityAbvTrio(gravityUnits, abvUnits, og, fg, abv, ogSpecified,
     if (abvSpecified) {
       const tmpAbv = abvUnits === Constants.ABV_UNITS.ABW ? ABWToABV(abv) : abv;
       const sg = ABVToSG(tmpAbv);
-      const tmp2 = og - sg + 1;
+      const ogSg = convToSG(og, gravityUnits);
+      const tmp2 = ogSg - sg + 1;
 
       if (gravityUnits === Constants.GRAVITY_UNITS.BRIX) {
         resultFg = CalculatorAPI.ConvertSGToBrix(tmp2);
@@ -206,7 +206,8 @@ function resolveGravityAbvTrio(gravityUnits, abvUnits, og, fg, abv, ogSpecified,
   } else {
     const tmpAbv = abvUnits === Constants.ABV_UNITS.ABW ? ABWToABV(abv) : abv;
     const sg = stormABVtoSG(tmpAbv);
-    const tmp = fg + sg - 1;
+    const fgSg = convToSG(fg, gravityUnits);
+    const tmp = fgSg + sg - 1;
 
     if (gravityUnits === Constants.GRAVITY_UNITS.BRIX) {
       resultOg = CalculatorAPI.ConvertSGToBrix(tmp);

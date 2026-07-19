@@ -89,4 +89,33 @@ describe('resolveGravityAbvTrio', () => {
     );
     assert.equal(Math.round(result.og * 1000) / 1000, 1.108);
   });
+
+  it('converts a BRIX og to SG before solving fg from og and abv (regression)', () => {
+    // previously produced a nonsensical fg (~1734301.697) because the raw BRIX og was used
+    // directly in the SG-space delta computation instead of being converted first
+    const result = Gravity.resolveGravityAbvTrio(
+      Constants.GRAVITY_UNITS.BRIX,
+      Constants.ABV_UNITS.ABV,
+      25,
+      -0.521,
+      14.0,
+      true,
+      true
+    );
+    assert.ok(Math.abs(result.fg) < 100, `expected a plausible BRIX value, got ${result.fg}`);
+    assert.equal(Math.round(result.fg * 1000) / 1000, -0.284);
+  });
+
+  it('converts a BAUME fg to SG before solving og from fg and abv (regression)', () => {
+    const result = Gravity.resolveGravityAbvTrio(
+      Constants.GRAVITY_UNITS.BAUME,
+      Constants.ABV_UNITS.ABV,
+      13,
+      5,
+      14.37,
+      false,
+      true
+    );
+    assert.ok(Math.abs(result.og) < 100, `expected a plausible BAUME value, got ${result.og}`);
+  });
 });
