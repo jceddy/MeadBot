@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const CalculatorAPI = require('../calculator/CalculatorAPI.js');
-const Gravity = require('../calculator/GravityCalculator.js');
+const Batch = require('../calculator/BatchCalculator.js');
 const Nutrient = require('../calculator/NutrientCalculator.js');
 const Constants = CalculatorAPI.Constants;
 
@@ -360,151 +360,49 @@ module.exports = {
       }
     }
 
-    let fg = residualSugar;
-    let abv = yeastAbv;
-    const u = units;
-    let bV = volume;
-    const nR = yanRequirement;
-    if (u === Constants.UNITS.METRIC) {
-      bV = bV / 3.784; // convert to gallons
-    }
-
-    let og;
-    if (ogOverride > 0) {
-      og = ogOverride;
-      const sg = Gravity.stormABVtoSG(abv);
-      fg = og - sg + 1;
-      if (fg < 1) {
-        fg = 1;
-        abv = yeastAbv = CalculatorAPI.ConvertGravityDropToABV(og);
-      }
-      residualSugar = fg;
-    } else {
-      const sg = Gravity.stormABVtoSG(abv);
-      og = sg + fg - 1;
-    }
-
-    const sgDelta = og - fg + 1;
-    let yan = Gravity.stormSGtoYAN(sgDelta, nR);
-
-    let snaSchedule;
-    if (snaScheduleOverride == null) {
-      if (yanRequirement === Constants.YAN_REQUIREMENT.KVEIK) {
-        snaSchedule = ['pitch'];
-      } else if (hot) {
-        if (og >= 1.1) {
-          snaSchedule = [24, 'break'];
-        } else if (og >= 1.08) {
-          snaSchedule = [24];
-        } else {
-          snaSchedule = ['pitch'];
-        }
-      } else if (og >= 1.12) {
-        snaSchedule = [24, 48, 72, 'break'];
-      } else if (og >= 1.1) {
-        snaSchedule = [24, 48, 'break'];
-      } else if (og >= 1.08) {
-        snaSchedule = [24, 'break'];
-      } else if (og >= 1.06) {
-        snaSchedule = [24];
-      } else {
-        snaSchedule = ['pitch'];
-      }
-    } else {
-      snaSchedule = snaScheduleOverride;
-    }
-
-    let fruitPercent = 0;
-    let fruitPercent100 = 0;
-    let fruitYanContribution = 0;
-    if (fruitSg > 0) {
-      if (fruitSg > og) {
-        message.channel.send("Fruit SG can't be higher than OG. (" + fruitSg.toFixed(3) + ' > ' + og.toFixed(3) + ')');
-        return;
-      }
-      fruitPercent = (fruitSg - 1) / (og - 1);
-      if (yanRequirement === Constants.YAN_REQUIREMENT.KVEIK) {
-        fruitPercent = fruitPercent / 1.5;
-      }
-      fruitPercent100 = fruitPercent * 100;
-      fruitYanContribution = Math.floor(yan * fruitPercent);
-      yan -= fruitYanContribution;
-    }
-
-    const ho = Nutrient.hoCalc(og, bV, u);
-    if (ho == null) {
-      message.channel.send('Error calculating Honey Weight: Unknown Units.');
+    const result = Batch.buildBatch({
+      units,
+      volume,
+      yeastAbv,
+      residualSugar,
+      yanRequirement,
+      nutrientRegimen,
+      ogOverride,
+      pitchRateOverride,
+      fruitSg,
+      yanOverride,
+      fermOEffectiveness,
+      enforceLimits,
+      dapLimit,
+      fermKLimit,
+      fermOLimit,
+      yanRatioDap,
+      yanRatioFermK,
+      yanRatioFermO,
+      fermKYan,
+      gofermYan,
+      fillFkFirst,
+      hot,
+      snaScheduleOverride,
+    });
+    if (result.error) {
+      message.channel.send(result.errorMessage);
       return;
     }
-    const tp = nutrientRegimen;
-    og = Math.round(og * 1000) / 1000;
-
-    let gf;
-    if (pitchRateOverride > 0) {
-      const yst = pitchRateOverride * volume;
-      const numPacket = Math.ceil(yst / 5);
-      const gfGrams = 1.25 * numPacket * 5;
-      const reh = gfGrams * 20;
-      gf = [yst, numPacket, gfGrams, reh];
-    } else {
-      gf = Nutrient.getGoferm(bV, og, fruitYanContribution);
-    }
-
-    const gofermYanContribution = Math.floor((gf[2] * gofermYan) / (bV * 3.784));
-    yan -= gofermYanContribution;
-
-    if (ho[0] > 100) {
-      ho[0] = Math.round(ho[0]);
-    } else if (ho[0] > 10) {
-      ho[0] = Math.round(ho[0] * 10) / 10;
-    } else {
-      ho[0] = Math.round(ho[0] * 100) / 100;
-    }
-
-    let nut;
-    let advancedNutrients;
-    switch (tp) {
-      case Constants.NUTRIENT_REGIMEN.TOSNA:
-        nut = Nutrient.getFermO(bV, yan, snaSchedule);
-        break;
-      case Constants.NUTRIENT_REGIMEN.K_DAP:
-        nut = Nutrient.getFermKdap(bV, yan, snaSchedule, fermKYan);
-        break;
-      case Constants.NUTRIENT_REGIMEN.BLOUNT_ELLIOTT:
-        nut = Nutrient.getNutrients(bV, abv, yan, snaSchedule, fermKYan, fermOEffectiveness);
-        break;
-      case Constants.NUTRIENT_REGIMEN.TOSNA_K:
-        nut = Nutrient.getFermK(bV, yan, snaSchedule);
-        break;
-      case Constants.NUTRIENT_REGIMEN.O_K:
-        nut = Nutrient.getFermOK(bV, yan, snaSchedule);
-        break;
-      case Constants.NUTRIENT_REGIMEN.ADVANCED:
-        if (yanOverride > 0) {
-          yan = yanOverride - gofermYanContribution;
-        }
-        advancedNutrients = Nutrient.getAdvancedNutrients(
-          units,
-          volume,
-          yan,
-          fermOEffectiveness,
-          enforceLimits,
-          dapLimit,
-          fermKLimit,
-          fermOLimit,
-          yanRatioDap,
-          yanRatioFermK,
-          yanRatioFermO,
-          snaSchedule,
-          fermKYan,
-          fillFkFirst
-        );
-        nut = advancedNutrients.sna;
-        break;
-      default:
-        message.channel.send('Calculation failed: Unknown Nutrient Regimen.');
-        return;
-    }
+    const {
+      og,
+      fg,
+      abv,
+      gofermYanContribution,
+      fruitPercent,
+      fruitPercent100,
+      fruitYanContribution,
+      honey,
+      goferm: gf,
+      nut,
+      advancedNutrients,
+      break3,
+    } = result;
 
     const batchSpecsEmbed = new EmbedBuilder().setTitle('Batch Specs').addFields(
       {
@@ -512,9 +410,9 @@ module.exports = {
         value: volume.toFixed(2) + (units === Constants.UNITS.US ? ' gallon(s)' : ' liter(s)'),
         inline: true,
       },
-      { name: 'Estimated ABV', value: yeastAbv.toFixed(2) + '%', inline: true },
+      { name: 'Estimated ABV', value: abv.toFixed(2) + '%', inline: true },
       { name: 'Target OG', value: og.toFixed(3), inline: true },
-      { name: 'Target FG', value: residualSugar.toFixed(3), inline: true },
+      { name: 'Target FG', value: fg.toFixed(3), inline: true },
       { name: 'YAN Requirement', value: Constants.YAN_REQUIREMENT_STRING[yanRequirement], inline: true },
       { name: 'YAN Provided', value: (nut.nitrogen + gofermYanContribution).toFixed(1), inline: true },
       { name: 'Nutrient Regimen', value: Constants.NUTRIENT_REGIMEN_STRING[nutrientRegimen], inline: true }
@@ -532,7 +430,7 @@ module.exports = {
         { name: 'Fruit YAN Contribution', value: String(fruitYanContribution), inline: true }
       );
     }
-    if (tp === Constants.NUTRIENT_REGIMEN.ADVANCED && advancedNutrients.enforce) {
+    if (nutrientRegimen === Constants.NUTRIENT_REGIMEN.ADVANCED && advancedNutrients.enforce) {
       batchSpecsEmbed.addFields(
         { name: 'DAP Limit (g/L)', value: advancedNutrients.dap_limit.toFixed(2), inline: true },
         { name: 'Ferm K Limit (g/L)', value: advancedNutrients.fermK_limit.toFixed(2), inline: true },
@@ -543,13 +441,13 @@ module.exports = {
     const ingredientsEmbed = new EmbedBuilder()
       .setTitle('Ingredients')
       .addFields(
-        { name: 'Honey Needed', value: String(ho[0] + ho[1]), inline: true },
-        { name: 'Dry Yeast Minimum Weight', value: gf[0] + 'g', inline: true },
-        { name: '# Dry Yeast Packet(s)', value: gf[1] + ' (' + gf[1] * 5 + 'g yeast)', inline: true },
-        { name: 'Go-ferm', value: gf[2] + 'g', inline: true },
-        { name: 'Water to dilute Go-ferm', value: gf[2] * 20 + 'ml', inline: true }
+        { name: 'Honey Needed', value: String(honey.weight + honey.unit), inline: true },
+        { name: 'Dry Yeast Minimum Weight', value: gf.minGrams + 'g', inline: true },
+        { name: '# Dry Yeast Packet(s)', value: gf.numPackets + ' (' + gf.numPackets * 5 + 'g yeast)', inline: true },
+        { name: 'Go-ferm', value: gf.grams + 'g', inline: true },
+        { name: 'Water to dilute Go-ferm', value: gf.grams * 20 + 'ml', inline: true }
       );
-    if (tp !== Constants.NUTRIENT_REGIMEN.ADVANCED) {
+    if (nutrientRegimen !== Constants.NUTRIENT_REGIMEN.ADVANCED) {
       if (nut.totalFermO > 0) {
         ingredientsEmbed.addFields({ name: 'Fermaid O', value: nut.totalFermO + 'g', inline: true });
       }
@@ -561,11 +459,6 @@ module.exports = {
       }
     }
 
-    const ogPts = og - 1;
-    const fgPts = fg - 1;
-    const sgDiff = ogPts - fgPts;
-    const break3 = 1 + (fgPts + (sgDiff * 2) / 3);
-
     const snaEmbed = new EmbedBuilder().setTitle('Nutrient Additions');
     for (const addition of nut.additions) {
       snaEmbed.addFields({
@@ -575,7 +468,7 @@ module.exports = {
       });
     }
 
-    if (tp === Constants.NUTRIENT_REGIMEN.ADVANCED) {
+    if (nutrientRegimen === Constants.NUTRIENT_REGIMEN.ADVANCED) {
       const nutrientsEmbed = new EmbedBuilder().setTitle('Nutrients').addFields(
         {
           name: 'YAN Ratio',
