@@ -149,49 +149,17 @@ module.exports = {
       }
     }
 
-    if (inputOg !== og) {
-      if (inputAbv !== abv) {
-        og = inputOg;
-        abv = inputAbv;
-
-        const tmpAbv = abvUnits === Constants.ABV_UNITS.ABW ? Gravity.ABWToABV(abv) : abv;
-        const sg = Gravity.ABVToSG(tmpAbv);
-        const tmp2 = og - sg + 1;
-
-        if (gravityUnits === Constants.GRAVITY_UNITS.BRIX) {
-          fg = CalculatorAPI.ConvertSGToBrix(tmp2);
-        } else if (gravityUnits === Constants.GRAVITY_UNITS.BAUME) {
-          fg = Gravity.SGToBaume(tmp2);
-        } else {
-          fg = tmp2;
-        }
-      } else {
-        og = inputOg;
-        fg = inputFg;
-
-        const tmp = Gravity.convToSG(og, gravityUnits);
-        const tmp2 = Gravity.convToSG(fg, gravityUnits);
-        abv = CalculatorAPI.ConvertGravityDropToABV(1 + Number(tmp) - Number(tmp2));
-        if (abvUnits === Constants.ABV_UNITS.ABW) {
-          abv = Gravity.ABVToABW(abv);
-        }
-      }
-    } else {
-      fg = inputFg;
-      abv = inputAbv;
-
-      const tmpAbv = abvUnits === Constants.ABV_UNITS.ABW ? Gravity.ABWToABV(abv) : abv;
-      const sg = Gravity.stormABVtoSG(tmpAbv);
-      const tmp = fg + sg - 1;
-
-      if (gravityUnits === Constants.GRAVITY_UNITS.BRIX) {
-        og = CalculatorAPI.ConvertSGToBrix(tmp);
-      } else if (gravityUnits === Constants.GRAVITY_UNITS.BAUME) {
-        og = Gravity.SGToBaume(tmp);
-      } else {
-        og = tmp;
-      }
-    }
+    const ogSpecified = inputOg !== og;
+    const abvSpecified = inputAbv !== abv;
+    ({ og, fg, abv } = Gravity.resolveGravityAbvTrio(
+      gravityUnits,
+      abvUnits,
+      inputOg,
+      inputFg,
+      inputAbv,
+      ogSpecified,
+      abvSpecified
+    ));
 
     const embed = new EmbedBuilder().setTitle('Potential Alcohol Conversion').addFields(
       {

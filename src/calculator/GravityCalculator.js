@@ -159,6 +159,67 @@ function stormSGtoYAN(sgDelta, yanRequirement) {
   );
 }
 
+// resolveGravityAbvTrio(gravityUnits, abvUnits, og, fg, abv, ogSpecified, abvSpecified) - given
+// og/fg/abv values already expressed in gravityUnits/abvUnits (using a caller-chosen default for
+// any value the user didn't specify), and whether og and abv were explicitly specified, solves
+// for whichever of og/fg/abv is implied by the other two:
+//  - og and abv specified -> solve fg
+//  - only og specified (or og+fg) -> solve abv
+//  - otherwise -> solve og (from fg and abv)
+// Extracted verbatim (same formulas, same branch selection) from !potential-alcohol's original
+// implementation, so it intentionally reproduces two long-standing quirks of that command:
+//  1. A supplied og/abv value that happens to equal the command's own default must be flagged as
+//     ogSpecified/abvSpecified = false by the caller to match original behavior, since the
+//     original command detected "specified" by comparing against its defaults rather than
+//     tracking whether the flag was passed.
+//  2. When gravityUnits is not SG, the "solve fg" and "solve og" branches use the og/fg input
+//     directly in the SG-space delta computation without first converting it to SG (only the
+//     "solve abv" branch does this correctly), which produces incorrect results for BRIX/BAUME
+//     combined with those two branches. This is a known bug, preserved here for parity with the
+//     live command; see MeadBotAPI's potential-alcohol endpoint for a corrected implementation.
+function resolveGravityAbvTrio(gravityUnits, abvUnits, og, fg, abv, ogSpecified, abvSpecified) {
+  let resultOg = og;
+  let resultFg = fg;
+  let resultAbv = abv;
+
+  if (ogSpecified) {
+    if (abvSpecified) {
+      const tmpAbv = abvUnits === Constants.ABV_UNITS.ABW ? ABWToABV(abv) : abv;
+      const sg = ABVToSG(tmpAbv);
+      const tmp2 = og - sg + 1;
+
+      if (gravityUnits === Constants.GRAVITY_UNITS.BRIX) {
+        resultFg = CalculatorAPI.ConvertSGToBrix(tmp2);
+      } else if (gravityUnits === Constants.GRAVITY_UNITS.BAUME) {
+        resultFg = SGToBaume(tmp2);
+      } else {
+        resultFg = tmp2;
+      }
+    } else {
+      const tmp = convToSG(og, gravityUnits);
+      const tmp2 = convToSG(fg, gravityUnits);
+      resultAbv = CalculatorAPI.ConvertGravityDropToABV(1 + Number(tmp) - Number(tmp2));
+      if (abvUnits === Constants.ABV_UNITS.ABW) {
+        resultAbv = ABVToABW(resultAbv);
+      }
+    }
+  } else {
+    const tmpAbv = abvUnits === Constants.ABV_UNITS.ABW ? ABWToABV(abv) : abv;
+    const sg = stormABVtoSG(tmpAbv);
+    const tmp = fg + sg - 1;
+
+    if (gravityUnits === Constants.GRAVITY_UNITS.BRIX) {
+      resultOg = CalculatorAPI.ConvertSGToBrix(tmp);
+    } else if (gravityUnits === Constants.GRAVITY_UNITS.BAUME) {
+      resultOg = SGToBaume(tmp);
+    } else {
+      resultOg = tmp;
+    }
+  }
+
+  return { gravityUnits, abvUnits, og: resultOg, fg: resultFg, abv: resultAbv };
+}
+
 module.exports = {
   BrixToSG,
   BaumeToSG,
@@ -180,4 +241,5 @@ module.exports = {
   volumeUnitsToHoneyUnits,
   stormABVtoSG,
   stormSGtoYAN,
+  resolveGravityAbvTrio,
 };
