@@ -1,3 +1,5 @@
+const describeFetchError = require('../utils/describeFetchError.js');
+
 const API_ROOT = process.env.MEADBOT_API_ROOT;
 const API_KEY = process.env.CHAT_API_KEY;
 const TOPUP_URL = process.env.BMAC_TOPUP_URL;
@@ -26,7 +28,7 @@ module.exports = {
       });
       payload = await response.json();
     } catch (error) {
-      await message.channel.send('Failed to reach the chat API: ' + error.message);
+      await message.channel.send('Failed to reach the chat API: ' + describeFetchError(error));
       return;
     }
 

@@ -125,6 +125,20 @@ describe('!chat-usage-by-user', () => {
     assert.deepEqual(message._sent, ['Failed to reach the chat API: getaddrinfo ENOTFOUND api.example.com']);
   });
 
+  it('includes error.cause when fetch throws its generic "fetch failed" error', async () => {
+    const command = loadCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    global.fetch = async () => {
+      const error = new TypeError('fetch failed');
+      error.cause = new Error('connect ECONNREFUSED 127.0.0.1:443');
+      throw error;
+    };
+
+    const message = makeMessage();
+    await command.execute(message);
+
+    assert.deepEqual(message._sent, ['Failed to reach the chat API: fetch failed: connect ECONNREFUSED 127.0.0.1:443']);
+  });
+
   it('splits into multiple chunks when the report is long', async () => {
     const command = loadCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
     const rows = Array.from({ length: 100 }, (_, i) => ({
