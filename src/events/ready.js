@@ -2,6 +2,7 @@ const CalculatorAPI = require('../calculator/CalculatorAPI.js');
 const ACTIVITIES = require('../data/activities.js');
 const notifyAdmin = require('../utils/notifyAdmin.js');
 const { scheduleCleanup } = require('../jobs/cleanup.js');
+const { start: startBmacWebhookServer } = require('../jobs/bmacWebhookServer.js');
 const { resetFatherDate } = require('../reactions/passiveReactions.js');
 
 module.exports = {
@@ -15,6 +16,7 @@ module.exports = {
     client.user.setActivity(activity.name, { type: activity.type });
 
     scheduleCleanup(client);
+    startBmacWebhookServer(client);
     resetFatherDate();
   },
 };
