@@ -53,6 +53,8 @@ loaded commands, so it's always accurate. Highlights:
   configured. If MeadBotAPI's Fireworks balance runs out, the error reply includes the
   `BMAC_TOPUP_URL` link (see `!topup`) so a user can top it up.
 - `!topup`: posts the `BMAC_TOPUP_URL` link for donating toward `!chat`'s AI usage budget.
+- `!chatbudget`: reports `!chat`'s remaining Fireworks AI usage budget (deposits minus usage cost,
+  from MeadBotAPI's `GET /balance`), including the `!topup` link if it's run out.
 
 Each calculator command supports `-h`/`--help` (optionally `-h all` for the full usage string).
 
