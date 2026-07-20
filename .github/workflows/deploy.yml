@@ -34,6 +34,8 @@ jobs:
         run: |
           echo "DISCORD_TOKEN=${{ secrets.AUTH_TOKEN }}" > .env
           echo "PREFIX=!" >> .env
+          echo "MEADBOT_API_ROOT=${{ secrets.MEADBOT_API_ROOT }}" >> .env
+          echo "CHAT_API_KEY=${{ secrets.CHAT_API_KEY }}" >> .env
 
       # local_path is a shell glob and does not match dotfiles, so .env is deployed
       # separately below by exact filename. sftp_only assumes SFTP_DIR already exists

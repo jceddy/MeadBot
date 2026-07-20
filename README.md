@@ -46,6 +46,11 @@ loaded commands, so it's always accurate. Highlights:
   commands (`!kahm`, `!yeet`, `!closure`, `!bees`, `!taco`, etc).
 - Info: `!wiki`, `!doc`, `!recipes`, `!mmm`, `!eligibility`, `!version`, `!funding`.
 - Admin: `!stop`.
+- `!chat` (alias `!ask`): chat with an LLM assistant backed by MeadBotAPI's calculators. Reply to
+  one of its responses with another `!chat`/`!ask` to continue that conversation — MeadBot
+  reconstructs history from the reply chain rather than keeping its own session state. Requires
+  `MEADBOT_API_ROOT` and `CHAT_API_KEY` in `.env`; without them it reports itself as not
+  configured.
 
 Each calculator command supports `-h`/`--help` (optionally `-h all` for the full usage string).
 

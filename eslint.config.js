@@ -21,6 +21,8 @@ module.exports = [
         clearInterval: 'readonly',
         setImmediate: 'readonly',
         globalThis: 'readonly',
+        fetch: 'readonly',
+        AbortSignal: 'readonly',
       },
     },
     rules: {
