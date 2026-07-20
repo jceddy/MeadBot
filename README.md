@@ -55,6 +55,9 @@ loaded commands, so it's always accurate. Highlights:
 - `!topup`: posts the `BMAC_TOPUP_URL` link for donating toward `!chat`'s AI usage budget.
 - `!chatbudget`: reports `!chat`'s remaining Fireworks AI usage budget (deposits minus usage cost,
   from MeadBotAPI's `GET /balance`), including the `!topup` link if it's run out.
+- `!chat-usage-by-user`: reports `!chat` usage broken down per Discord user (request count, cost,
+  tokens, last used), from MeadBotAPI's `GET /balance/usage-by-user`. Mentions are posted with
+  notifications suppressed, so running this report doesn't ping everyone listed in it.
 
 Each calculator command supports `-h`/`--help` (optionally `-h all` for the full usage string).
 
