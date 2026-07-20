@@ -28,6 +28,17 @@ const SYSTEM_PROMPT =
   'has produced bad advice before. Only answer from your own knowledge if you have actually ' +
   'checked the wiki first and it genuinely has nothing relevant, and if so say so explicitly ' +
   'rather than presenting the answer as if it came from the wiki.\n\n' +
+  'DISCORD FORMATTING RULES: Discord message content does not render markdown tables, LaTeX/math ' +
+  'notation (e.g. \\text{...}, \\times), or raw HTML tags (e.g. <br>, <table>) -- they show up as ' +
+  'literal characters, not formatting, and look broken. Never use any of those. Use plain prose ' +
+  'and bullet lists ("- item") instead of tables, **bold**/*italic* for emphasis, plain line ' +
+  'breaks instead of <br>, and write formulas out in plain text (e.g. "ABV = (OG - FG) x 131.25") ' +
+  'instead of LaTeX.\n\n' +
+  'CITING SOURCES: when your answer draws on a page you fetched with fetch_meadtools_wiki_page, ' +
+  'end your reply with a "Sources:" section listing each page\'s title and its bare url on its ' +
+  'own line, e.g. "Process Summary: https://wiki.meadtools.com/en/process/process_summary". Use ' +
+  'the bare url only -- Discord auto-links plain URLs in message content, but does NOT render ' +
+  '[text](url) markdown link syntax as a clickable link there, so never use that syntax.\n\n' +
   'Keep replies concise and suited for a Discord chat.';
 
 const USAGE =
