@@ -23,6 +23,9 @@ module.exports = {
     honeyPot: process.env.HONEYPOT_CHANNEL_ID || '',
     // channels where MeadBot banters back when mentioned or at random
     banter: idList(process.env.BANTER_CHANNEL_IDS, ['795859577371361280', '803440059927101440']),
+    // where Buy Me a Coffee donation announcements are posted; leave empty to disable posting
+    // (the webhook server itself is still controlled separately, see BMAC_WEBHOOK_PORT)
+    bmacAnnounce: process.env.BMAC_ANNOUNCE_CHANNEL_ID || '',
   },
 
   guilds: {

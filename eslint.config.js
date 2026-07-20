@@ -23,6 +23,7 @@ module.exports = [
         globalThis: 'readonly',
         fetch: 'readonly',
         AbortSignal: 'readonly',
+        Buffer: 'readonly',
       },
     },
     rules: {

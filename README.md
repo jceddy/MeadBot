@@ -61,6 +61,12 @@ Beyond commands, MeadBot also (both configurable/disableable via `.env`, see abo
 - Auto-bans anyone who posts in a configured "honeypot" channel (unless they're an admin or
   hold an exempt role) — set `HONEYPOT_CHANNEL_ID` to enable.
 - Runs a daily job that deletes old messages from its own admin/spam channels.
+- Listens for Buy Me a Coffee "extra purchase" donation webhooks and announces them in
+  `BMAC_ANNOUNCE_CHANNEL_ID` (with Discord-handle attribution, if the supporter answered a
+  "Discord username" question on the extra) — set `BMAC_WEBHOOK_PORT` and `BMAC_SIGNING_SECRET`
+  to enable; the port must already be reachable from the internet (firewall/port-forwarding),
+  since MeadBot doesn't manage that itself. Purely an announcement — it does not touch
+  MeadBotAPI's balance ledger; topping that up from a donation is a manual step.
 - Reacts or replies to certain keywords/phrases in messages (scoped to the configured guild
   where noted in `src/reactions/passiveReactions.js`).
 - Watches `version.json` for changes (checked roughly every 4 seconds) and exits if it differs
