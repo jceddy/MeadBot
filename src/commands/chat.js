@@ -2,6 +2,7 @@ const chunkLines = require('../utils/chunkMessage.js');
 
 const API_ROOT = process.env.MEADBOT_API_ROOT;
 const API_KEY = process.env.CHAT_API_KEY;
+const TOPUP_URL = process.env.BMAC_TOPUP_URL;
 
 const SYSTEM_PROMPT =
   'You are MeadBot, a Discord bot for a mead-making community, currently in chat mode. You have ' +
@@ -107,7 +108,11 @@ module.exports = {
     }
 
     if (payload.error) {
-      await message.channel.send('Chat error: ' + payload.errorMessage);
+      let errorText = 'Chat error: ' + payload.errorMessage;
+      if (payload.insufficientBalance && TOPUP_URL) {
+        errorText += `\nThe AI usage budget is empty -- help top it up: ${TOPUP_URL}`;
+      }
+      await message.channel.send(errorText);
       return;
     }
 

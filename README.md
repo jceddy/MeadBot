@@ -50,7 +50,9 @@ loaded commands, so it's always accurate. Highlights:
   one of its responses with another `!chat`/`!ask` to continue that conversation — MeadBot
   reconstructs history from the reply chain rather than keeping its own session state. Requires
   `MEADBOT_API_ROOT` and `CHAT_API_KEY` in `.env`; without them it reports itself as not
-  configured.
+  configured. If MeadBotAPI's Fireworks balance runs out, the error reply includes the
+  `BMAC_TOPUP_URL` link (see `!topup`) so a user can top it up.
+- `!topup`: posts the `BMAC_TOPUP_URL` link for donating toward `!chat`'s AI usage budget.
 
 Each calculator command supports `-h`/`--help` (optionally `-h all` for the full usage string).
 

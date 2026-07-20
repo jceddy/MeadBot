@@ -40,6 +40,7 @@ jobs:
           echo "BMAC_WEBHOOK_PORT=${{ secrets.BMAC_WEBHOOK_PORT }}" >> .env
           echo "BMAC_SIGNING_SECRET=${{ secrets.BMAC_SIGNING_SECRET }}" >> .env
           echo "BMAC_ANNOUNCE_CHANNEL_ID=${{ secrets.BMAC_ANNOUNCE_CHANNEL_ID }}" >> .env
+          echo "BMAC_TOPUP_URL=${{ secrets.BMAC_TOPUP_URL }}" >> .env
 
       # local_path is a shell glob and does not match dotfiles, so .env is deployed
       # separately below by exact filename. sftp_only assumes SFTP_DIR already exists

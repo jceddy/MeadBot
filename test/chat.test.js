@@ -5,12 +5,18 @@ const CHAT_MODULE_PATH = require.resolve('../src/commands/chat.js');
 
 function loadChatCommand(env) {
   delete require.cache[CHAT_MODULE_PATH];
-  const previous = { MEADBOT_API_ROOT: process.env.MEADBOT_API_ROOT, CHAT_API_KEY: process.env.CHAT_API_KEY };
+  const previous = {
+    MEADBOT_API_ROOT: process.env.MEADBOT_API_ROOT,
+    CHAT_API_KEY: process.env.CHAT_API_KEY,
+    BMAC_TOPUP_URL: process.env.BMAC_TOPUP_URL,
+  };
   process.env.MEADBOT_API_ROOT = env.MEADBOT_API_ROOT;
   process.env.CHAT_API_KEY = env.CHAT_API_KEY;
+  process.env.BMAC_TOPUP_URL = env.BMAC_TOPUP_URL || '';
   const command = require('../src/commands/chat.js');
   process.env.MEADBOT_API_ROOT = previous.MEADBOT_API_ROOT;
   process.env.CHAT_API_KEY = previous.CHAT_API_KEY;
+  process.env.BMAC_TOPUP_URL = previous.BMAC_TOPUP_URL;
   return command;
 }
 
@@ -199,6 +205,41 @@ describe('!chat', () => {
     await chat.execute(message, [], makeClient());
 
     assert.deepEqual(message._sent, ['Chat error: Missing or invalid X-Api-Key header.']);
+  });
+
+  it('appends the top-up link when the chat endpoint reports insufficientBalance', async () => {
+    const chat = loadChatCommand({
+      MEADBOT_API_ROOT: 'https://api.example.com',
+      CHAT_API_KEY: 'secret',
+      BMAC_TOPUP_URL: 'https://buymeacoffee.com/jceddy/extras',
+    });
+    global.fetch = async () => ({
+      json: async () => ({
+        error: true,
+        errorMessage: 'Chat backend error: Fireworks request failed (HTTP 402): Insufficient balance',
+        insufficientBalance: true,
+      }),
+    });
+
+    const message = makeMessage({ content: '!chat hi' });
+    await chat.execute(message, [], makeClient());
+
+    assert.deepEqual(message._sent, [
+      'Chat error: Chat backend error: Fireworks request failed (HTTP 402): Insufficient balance\n' +
+        'The AI usage budget is empty -- help top it up: https://buymeacoffee.com/jceddy/extras',
+    ]);
+  });
+
+  it('omits the top-up link on an insufficientBalance error when BMAC_TOPUP_URL is unset', async () => {
+    const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    global.fetch = async () => ({
+      json: async () => ({ error: true, errorMessage: 'insufficient balance', insufficientBalance: true }),
+    });
+
+    const message = makeMessage({ content: '!chat hi' });
+    await chat.execute(message, [], makeClient());
+
+    assert.deepEqual(message._sent, ['Chat error: insufficient balance']);
   });
 
   it('reports a network failure without throwing', async () => {
