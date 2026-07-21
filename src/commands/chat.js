@@ -1,5 +1,6 @@
 const chunkLines = require('../utils/chunkMessage.js');
 const describeFetchError = require('../utils/describeFetchError.js');
+const sanitizeMarkdownForDiscord = require('../utils/sanitizeMarkdownForDiscord.js');
 
 const API_ROOT = process.env.MEADBOT_API_ROOT;
 const API_KEY = process.env.CHAT_API_KEY;
@@ -149,7 +150,8 @@ module.exports = {
 
     // Reply only to the first chunk, so a follow-up reply from the user has exactly one message
     // in the chain to anchor to per turn.
-    const chunks = chunkLines(String(payload.reply).split('\n'));
+    const replyText = sanitizeMarkdownForDiscord(String(payload.reply));
+    const chunks = chunkLines(replyText.split('\n'));
     for (let i = 0; i < chunks.length; i++) {
       if (i === 0) {
         await message.reply(chunks[i]);
