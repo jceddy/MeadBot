@@ -1,6 +1,7 @@
 const describeFetchError = require('../utils/describeFetchError.js');
 const { buildChatHistory, looksLikeChatInvocation } = require('../utils/buildChatHistory.js');
 const notifyOwner = require('../utils/notifyOwner.js');
+const jumpLink = require('../utils/jumpLink.js');
 
 const API_ROOT = process.env.MEADBOT_API_ROOT;
 const API_KEY = process.env.CHAT_API_KEY;
@@ -88,14 +89,13 @@ module.exports = {
     }
 
     const messages = [...history, { role: 'assistant', content: message.content }];
-    const jumpLink = `https://discord.com/channels/${message.guildId || '@me'}/${message.channelId}/${message.id}`;
 
     const persistedNote = await postFeedback(messages, user, message);
 
     await notifyOwner(
       client,
       message.guild,
-      `${THUMBS_DOWN} Negative feedback on a !chat reply from <@${user.id}>: ${jumpLink}\n${persistedNote}`
+      `${THUMBS_DOWN} Negative feedback on a !chat reply from <@${user.id}>: ${jumpLink(message)}\n${persistedNote}`
     );
   },
 };

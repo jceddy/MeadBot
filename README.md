@@ -66,7 +66,10 @@ loaded commands, so it's always accurate. Highlights:
   chain rather than keeping its own session state. Requires `MEADBOT_API_ROOT` and `CHAT_API_KEY`
   in `.env`; without them it reports itself as not configured. If MeadBotAPI's Fireworks balance
   runs out, the error reply includes the `BMAC_TOPUP_URL` link (see `!topup`) so a user can top
-  it up.
+  it up. If the chat agent exhausts its tool-calling budget without reaching an answer, the user
+  gets a friendly "I don't know the answer to that" reply instead of the raw backend error, and
+  the bot owner is DMed (same recipient as an unhandled command error) with the question and a
+  jump link to it, for investigation.
 - `!topup`: posts the `BMAC_TOPUP_URL` link for donating toward `!chat`'s AI usage budget.
 - `!chatbudget`: reports `!chat`'s remaining Fireworks AI usage budget (deposits minus usage cost,
   from MeadBotAPI's `GET /balance`), including the `!topup` link if it's run out.

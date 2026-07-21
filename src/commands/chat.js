@@ -2,6 +2,8 @@ const chunkLines = require('../utils/chunkMessage.js');
 const describeFetchError = require('../utils/describeFetchError.js');
 const sanitizeMarkdownForDiscord = require('../utils/sanitizeMarkdownForDiscord.js');
 const { buildChatHistory, stripCommandPrefix } = require('../utils/buildChatHistory.js');
+const notifyOwner = require('../utils/notifyOwner.js');
+const jumpLink = require('../utils/jumpLink.js');
 
 const API_ROOT = process.env.MEADBOT_API_ROOT;
 const API_KEY = process.env.CHAT_API_KEY;
@@ -103,6 +105,18 @@ module.exports = {
     }
 
     if (payload.error) {
+      if (payload.exceededToolIterations) {
+        await notifyOwner(
+          client,
+          message.guild,
+          `!chat hit the tool-calling iteration cap for <@${message.author.id}>: ${jumpLink(message)}\nQuestion: ${userText}`
+        );
+        await message.reply(
+          "I don't know the answer to that -- maybe try asking a different way, or a more specific question?"
+        );
+        return;
+      }
+
       let errorText = 'Chat error: ' + payload.errorMessage;
       if (payload.insufficientBalance && TOPUP_URL) {
         errorText += `\nThe AI usage budget is empty -- help top it up: ${TOPUP_URL}`;
