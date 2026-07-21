@@ -91,6 +91,11 @@ Beyond commands, MeadBot also (both configurable/disableable via `.env`, see abo
   MeadBotAPI's balance ledger; topping that up from a donation is a manual step.
 - Reacts or replies to certain keywords/phrases in messages (scoped to the configured guild
   where noted in `src/reactions/passiveReactions.js`).
+- Watches for a 👎 reaction on one of its own `!chat`/`!ask` replies. If confirmed (the reacted-to
+  message must be a reply whose reply chain traces back to a `!chat`/`!ask` invocation — this
+  rules out unrelated bot replies like `!help`'s), it reconstructs the conversation and records it
+  via MeadBotAPI's `POST /api/v1/chat/feedback`, then DMs the bot owner (same recipient as an
+  unhandled command error) with a jump link to the message and whether persisting succeeded.
 - Watches `version.json` for changes (checked roughly every 4 seconds) and exits if it differs
   from the version loaded at startup, so a deploy that updates `version.json` triggers a
   restart under the systemd service. See `!version` and [Versioning](#versioning) below.
