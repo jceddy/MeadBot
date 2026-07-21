@@ -40,6 +40,20 @@ module.exports = function sanitizeMarkdownForDiscord(text) {
   result = result.replace(/\\[a-zA-Z]+\{([^}]*)\}/g, '$1');
   result = result.replace(/\\[a-zA-Z]+/g, '');
 
+  // Wrap bare URLs in <angle brackets> so Discord doesn't generate a link preview/embed for
+  // them -- still a clickable link, just without the extra embed card. Skips URLs already
+  // wrapped (the negative lookbehind), so this is safe to run whether or not the model already
+  // did it itself. Trailing sentence punctuation (periods, closing parens, etc.) is excluded
+  // from the bracket so it reads naturally, e.g. "...home)." not "...home).>".
+  result = result.replace(/(?<!<)(https?:\/\/[^\s<>]+)/g, (url) => {
+    const trailingPunctuation = url.match(/[.,!?;:)\]]+$/);
+    if (!trailingPunctuation) {
+      return `<${url}>`;
+    }
+    const core = url.slice(0, -trailingPunctuation[0].length);
+    return `<${core}>${trailingPunctuation[0]}`;
+  });
+
   // Collapse the ragged whitespace/blank lines left behind by the replacements above: multiple
   // internal spaces (e.g. from a removed LaTeX command) become one, but leading indentation is
   // preserved since it can be meaningful (nested list items).

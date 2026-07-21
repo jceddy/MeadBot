@@ -64,13 +64,48 @@ describe('sanitizeMarkdownForDiscord', () => {
     assert.equal(sanitizeMarkdownForDiscord(text), text);
   });
 
+  it('wraps a bare URL in angle brackets to suppress Discord link previews', () => {
+    const result = sanitizeMarkdownForDiscord('See https://wiki.meadtools.com/en/home for details');
+    assert.equal(result, 'See <https://wiki.meadtools.com/en/home> for details');
+  });
+
+  it('excludes trailing sentence punctuation from the bracketed URL', () => {
+    const result = sanitizeMarkdownForDiscord('Check https://wiki.meadtools.com/en/home.');
+    assert.equal(result, 'Check <https://wiki.meadtools.com/en/home>.');
+  });
+
+  it('excludes a wrapping closing parenthesis from the bracketed URL', () => {
+    const result = sanitizeMarkdownForDiscord(
+      'Nutrient schedule (https://wiki.meadtools.com/en/process/nutrient_schedules) covers this.'
+    );
+    assert.equal(result, 'Nutrient schedule (<https://wiki.meadtools.com/en/process/nutrient_schedules>) covers this.');
+  });
+
+  it('leaves an already-bracketed URL alone instead of double-wrapping it', () => {
+    const text = 'See <https://wiki.meadtools.com/en/home> for details';
+    assert.equal(sanitizeMarkdownForDiscord(text), text);
+  });
+
+  it('wraps multiple distinct URLs in the same reply independently', () => {
+    const result = sanitizeMarkdownForDiscord(
+      'Process Summary: https://wiki.meadtools.com/en/process/process_summary\n' +
+        'Nutrient Schedules: https://wiki.meadtools.com/en/process/nutrient_schedules'
+    );
+    assert.equal(
+      result,
+      'Process Summary: <https://wiki.meadtools.com/en/process/process_summary>\n' +
+        'Nutrient Schedules: <https://wiki.meadtools.com/en/process/nutrient_schedules>'
+    );
+  });
+
   it('cleans up a realistic mixed example', () => {
     const input =
       '**Recipe**\n\n' +
       '| Ingredient | Amount | Notes |\n' +
       '|---|---|---|\n' +
       '| Honey | 3.2lb | Gives OG \\approx 1.100<br>Adjust to taste |\n\n' +
-      '\\text{ABV} = (OG - FG) \\times 131.25';
+      '\\text{ABV} = (OG - FG) \\times 131.25 ' +
+      '(https://wiki.meadtools.com/en/process/process_summary).';
 
     const result = sanitizeMarkdownForDiscord(input);
 
@@ -81,5 +116,6 @@ describe('sanitizeMarkdownForDiscord', () => {
     assert.ok(!result.includes('\\approx'));
     assert.ok(result.includes('ABV = (OG - FG) x 131.25'));
     assert.ok(result.includes('Adjust to taste'));
+    assert.ok(result.includes('(<https://wiki.meadtools.com/en/process/process_summary>).'));
   });
 });

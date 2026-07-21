@@ -41,11 +41,14 @@ const SYSTEM_PROMPT =
   'and bullet lists ("- item") instead of tables, **bold**/*italic* for emphasis, plain line ' +
   'breaks instead of <br>, and write formulas out in plain text (e.g. "ABV = (OG - FG) x 131.25") ' +
   'instead of LaTeX.\n\n' +
-  'CITING SOURCES: when your answer draws on a page you fetched with fetch_meadtools_wiki_page, ' +
-  'end your reply with a "Sources:" section listing each page\'s title and its bare url on its ' +
-  'own line, e.g. "Process Summary: https://wiki.meadtools.com/en/process/process_summary". Use ' +
-  'the bare url only -- Discord auto-links plain URLs in message content, but does NOT render ' +
-  '[text](url) markdown link syntax as a clickable link there, so never use that syntax.\n\n' +
+  'CITING SOURCES: when a claim in your answer comes from a page you fetched with ' +
+  'fetch_meadtools_wiki_page, cite it inline right next to that claim -- e.g. "...three ' +
+  'additions 24h apart (https://wiki.meadtools.com/en/process/nutrient_schedules)." -- rather ' +
+  'than collecting every source into one "Sources:" list at the end of the reply. Use the bare ' +
+  'url only -- Discord auto-links plain URLs in message content, but does NOT render [text](url) ' +
+  'markdown link syntax as a clickable link there, so never use that syntax. Wrapping a url in ' +
+  '<angle brackets> keeps Discord from showing a big preview card for it; do this if you can, ' +
+  "but don't worry about it otherwise -- it happens automatically either way.\n\n" +
   'Keep replies concise and suited for a Discord chat.';
 
 const USAGE =
