@@ -48,9 +48,10 @@ loaded commands, so it's always accurate. Highlights:
 - Admin: `!stop`.
 - `!chat` (alias `!ask`): chat with an LLM assistant backed by MeadBotAPI's calculators, plus two
   tools grounding it in [wiki.meadtools.com](https://wiki.meadtools.com/en/home) (restricted to
-  that host) — a static page index it should check first to find the right page directly, and a
-  page fetcher (which can also follow links) for drilling in or for anything the index doesn't
-  cover. The system prompt requires the model to consult the wiki before answering mead-making
+  that host) — a static page index (title, url, category, a one-sentence summary, keywords, and
+  related pages) it should check first to find the right page directly, and a page fetcher (which
+  can also follow links) for drilling in or for anything the index doesn't cover. The system
+  prompt requires the model to consult the wiki before answering mead-making
   judgment calls (recipe design, technique, troubleshooting) that aren't a pure calculation,
   rather than relying on its own training data, and to end such replies with a "Sources:" section
   linking the wiki page(s) it used (as bare URLs -- Discord doesn't render `[text](url)` markdown
