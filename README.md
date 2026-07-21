@@ -48,14 +48,20 @@ loaded commands, so it's always accurate. Highlights:
 - Admin: `!stop`.
 - `!chat` (alias `!ask`): chat with an LLM assistant backed by MeadBotAPI's calculators, plus two
   tools grounding it in [wiki.meadtools.com](https://wiki.meadtools.com/en/home) (restricted to
-  that host) — a static page index it should check first to find the right page directly, and a
-  page fetcher (which can also follow links) for drilling in or for anything the index doesn't
-  cover. The system prompt requires the model to consult the wiki before answering mead-making
+  that host) — a static page index (title, url, category, a one-sentence summary, keywords, and
+  related pages) it should check first to find the right page directly, and a page fetcher (which
+  can also follow links) for drilling in or for anything the index doesn't cover. The system
+  prompt requires the model to consult the wiki before answering mead-making
   judgment calls (recipe design, technique, troubleshooting) that aren't a pure calculation,
-  rather than relying on its own training data, and to end such replies with a "Sources:" section
-  linking the wiki page(s) it used (as bare URLs -- Discord doesn't render `[text](url)` markdown
-  links in message content). The prompt also steers it away from markdown tables/LaTeX/raw HTML
-  tags, none of which render in Discord messages. Reply to one of its responses with another
+  rather than relying on its own training data, and to cite wiki pages it used inline next to the
+  claims they support (as bare URLs -- Discord doesn't render `[text](url)` markdown links in
+  message content) rather than in one list at the end. The prompt also steers it away from
+  markdown tables/LaTeX/raw HTML tags, none of which render in Discord messages -- and since
+  prompt instructions aren't fully reliable, `sanitizeMarkdownForDiscord` (`src/utils/`) also
+  cleans up whatever slips through before the reply is sent: `<br>`/table tags become plain text,
+  GFM table separator rows are dropped, LaTeX-style notation (`\times`, `\text{...}`, etc.) is
+  converted to plain text, and bare URLs are wrapped in `<angle brackets>` so Discord doesn't
+  generate a link-preview embed for them. Reply to one of its responses with another
   `!chat`/`!ask` to continue that conversation — MeadBot reconstructs history from the reply
   chain rather than keeping its own session state. Requires `MEADBOT_API_ROOT` and `CHAT_API_KEY`
   in `.env`; without them it reports itself as not configured. If MeadBotAPI's Fireworks balance

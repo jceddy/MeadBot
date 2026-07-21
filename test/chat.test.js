@@ -283,6 +283,27 @@ describe('!chat', () => {
     }
   });
 
+  it('sanitizes Discord-unsafe markdown/HTML out of the reply before sending it', async () => {
+    const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    global.fetch = async () => ({
+      json: async () => ({
+        error: false,
+        reply: 'OG \\approx 1.100<br>| Ingredient | Amount |\n|---|---|\n| Honey | 3.2lb |',
+        messages: [],
+      }),
+    });
+
+    const message = makeMessage({ content: '!chat give me a recipe' });
+    await chat.execute(message, [], makeClient());
+
+    const sent = [...message._replies, ...message._sent].join('\n');
+    assert.ok(!sent.includes('<br>'));
+    assert.ok(!sent.includes('\\approx'));
+    assert.ok(!sent.includes('---'));
+    assert.ok(sent.includes('≈'));
+    assert.ok(sent.includes('Honey'));
+  });
+
   it('preserves original casing/punctuation from the raw message content, not the lowercased args array', async () => {
     const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
     let capturedBody;
