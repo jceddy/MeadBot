@@ -20,11 +20,27 @@ function loadChatCommand(env) {
   return command;
 }
 
-function makeClient() {
-  return { prefix: '!', user: { id: 'bot-id' } };
+function makeClient(sentDms = []) {
+  return {
+    prefix: '!',
+    user: { id: 'bot-id' },
+    users: {
+      fetch: async () => ({
+        send: async (text) => sentDms.push(text),
+      }),
+    },
+  };
 }
 
-function makeMessage({ content, authorId = 'user-1', reference = null, byId = {} }) {
+function makeMessage({
+  id = 'msg-1',
+  content,
+  authorId = 'user-1',
+  reference = null,
+  byId = {},
+  guildId = 'guild-1',
+  channelId = 'channel-1',
+}) {
   const sent = [];
   const replies = [];
   const typed = { count: 0 };
@@ -47,9 +63,13 @@ function makeMessage({ content, authorId = 'user-1', reference = null, byId = {}
   };
 
   const message = {
+    id,
     content,
     author: { id: authorId, bot: false },
     reference,
+    guildId,
+    channelId,
+    guild: null, // forces notifyOwner down the client.users.fetch path, not guild.members.fetch
     channel,
     reply: async (text) => {
       replies.push(text);
@@ -240,6 +260,38 @@ describe('!chat', () => {
     await chat.execute(message, [], makeClient());
 
     assert.deepEqual(message._sent, ['Chat error: insufficient balance']);
+  });
+
+  it('replies with a friendly message and DMs the owner when the tool-iteration cap is exceeded', async () => {
+    const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    global.fetch = async () => ({
+      json: async () => ({
+        error: true,
+        errorMessage: 'Chat backend error: Exceeded maximum tool-calling iterations (6).',
+        exceededToolIterations: true,
+      }),
+    });
+
+    const sentDms = [];
+    const client = makeClient(sentDms);
+    const message = makeMessage({
+      id: 'msg-42',
+      content: '!chat what is the meaning of life?',
+      authorId: 'user-7',
+      guildId: 'guild-1',
+      channelId: 'channel-1',
+    });
+    await chat.execute(message, [], client);
+
+    assert.deepEqual(message._sent, []);
+    assert.deepEqual(message._replies, [
+      "I don't know the answer to that -- maybe try asking a different way, or a more specific question?",
+    ]);
+
+    assert.equal(sentDms.length, 1);
+    assert.match(sentDms[0], /tool-calling iteration cap for <@user-7>/);
+    assert.match(sentDms[0], /https:\/\/discord\.com\/channels\/guild-1\/channel-1\/msg-42/);
+    assert.match(sentDms[0], /what is the meaning of life\?/);
   });
 
   it('reports a network failure without throwing', async () => {
