@@ -52,7 +52,10 @@ loaded commands, so it's always accurate. Highlights:
   page fetcher (which can also follow links) for drilling in or for anything the index doesn't
   cover. The system prompt requires the model to consult the wiki before answering mead-making
   judgment calls (recipe design, technique, troubleshooting) that aren't a pure calculation,
-  rather than relying on its own training data. Reply to one of its responses with another
+  rather than relying on its own training data, and to end such replies with a "Sources:" section
+  linking the wiki page(s) it used (as bare URLs -- Discord doesn't render `[text](url)` markdown
+  links in message content). The prompt also steers it away from markdown tables/LaTeX/raw HTML
+  tags, none of which render in Discord messages. Reply to one of its responses with another
   `!chat`/`!ask` to continue that conversation — MeadBot reconstructs history from the reply
   chain rather than keeping its own session state. Requires `MEADBOT_API_ROOT` and `CHAT_API_KEY`
   in `.env`; without them it reports itself as not configured. If MeadBotAPI's Fireworks balance
