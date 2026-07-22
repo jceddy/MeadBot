@@ -69,7 +69,13 @@ loaded commands, so it's always accurate. Highlights:
   it up. If the chat agent exhausts its tool-calling budget without reaching an answer, the user
   gets a friendly "I don't know the answer to that" reply instead of the raw backend error, and
   the bot owner is DMed (same recipient as an unhandled command error) with the question and a
-  jump link to it, for investigation.
+  jump link to it, for investigation. A leading `--model`/`-m` flag picks which LLM MeadBotAPI
+  runs the question against — `gpt` (gpt-oss-120b, the default) or `ds` (DeepSeek-V4-Flash), e.g.
+  `!chat --model ds what's my ABV?` — an unrecognized value is rejected with the two valid
+  options rather than silently falling back to the default. The typing indicator is kept alive
+  with a repeated `sendTyping()` every few seconds for the whole wait on MeadBotAPI, since Discord
+  clears it after about 10 seconds and a chat reply (especially one involving several tool calls)
+  routinely takes longer than that.
 - `!topup`: posts the `BMAC_TOPUP_URL` link for donating toward `!chat`'s AI usage budget.
 - `!chatbudget`: reports `!chat`'s remaining Fireworks AI usage budget (deposits minus usage cost,
   from MeadBotAPI's `GET /balance`), including the `!topup` link if it's run out.

@@ -134,10 +134,114 @@ describe('!chat', () => {
       { role: 'user', content: "What's my ABV for OG 1.100, FG 1.000?" },
     ]);
     assert.match(body.messages[0].content, /MeadBot/);
+    assert.equal(body.model, undefined);
 
     assert.deepEqual(message._replies, ['Your ABV is about 13.2%.']);
     assert.equal(message._sent.length, 0);
     assert.equal(message._typed.count, 1);
+  });
+
+  it('sends the selected model and strips --model from the question text', async () => {
+    const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    let capturedBody;
+    global.fetch = async (_url, options) => {
+      capturedBody = JSON.parse(options.body);
+      return { json: async () => ({ error: false, reply: 'ok', messages: [] }) };
+    };
+
+    const message = makeMessage({ content: '!chat --model ds what is my ABV?' });
+    await chat.execute(message, [], makeClient());
+
+    assert.equal(capturedBody.model, 'ds');
+    assert.equal(capturedBody.messages.at(-1).content, 'what is my ABV?');
+  });
+
+  it('accepts the short -m flag and is case-insensitive on both the flag and the model key', async () => {
+    const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    let capturedBody;
+    global.fetch = async (_url, options) => {
+      capturedBody = JSON.parse(options.body);
+      return { json: async () => ({ error: false, reply: 'ok', messages: [] }) };
+    };
+
+    const message = makeMessage({ content: '!chat -M DS what is my ABV?' });
+    await chat.execute(message, [], makeClient());
+
+    assert.equal(capturedBody.model, 'ds');
+    assert.equal(capturedBody.messages.at(-1).content, 'what is my ABV?');
+  });
+
+  it('rejects an unrecognized --model value without calling the chat API', async () => {
+    const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    let fetchCalled = false;
+    global.fetch = async () => {
+      fetchCalled = true;
+      return { json: async () => ({ error: false, reply: 'ok', messages: [] }) };
+    };
+
+    const message = makeMessage({ content: '!chat --model claude what is my ABV?' });
+    await chat.execute(message, [], makeClient());
+
+    assert.equal(fetchCalled, false);
+    assert.equal(message._sent.length, 1);
+    assert.match(message._sent[0], /Unknown model 'claude'/);
+  });
+
+  it('shows usage when --model is given with no value', async () => {
+    const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    const message = makeMessage({ content: '!chat --model' });
+
+    await chat.execute(message, [], makeClient());
+
+    assert.equal(message._sent.length, 1);
+    assert.match(message._sent[0], /Missing a model after --model/);
+  });
+
+  it('shows usage when --model is given with a value but no question follows', async () => {
+    const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    const message = makeMessage({ content: '!chat --model ds' });
+
+    await chat.execute(message, [], makeClient());
+
+    assert.equal(message._sent.length, 1);
+    assert.match(message._sent[0], /^Usage: !chat/);
+  });
+
+  it('keeps refreshing the typing indicator on an interval while waiting, and stops once the response arrives', async () => {
+    const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    global.fetch = async () => ({ json: async () => ({ error: false, reply: 'ok', messages: [] }) });
+
+    const originalSetInterval = global.setInterval;
+    const originalClearInterval = global.clearInterval;
+    let capturedCallback;
+    let capturedDelay;
+    let clearedHandle;
+    const fakeHandle = {};
+    global.setInterval = (callback, delay) => {
+      capturedCallback = callback;
+      capturedDelay = delay;
+      return fakeHandle;
+    };
+    global.clearInterval = (handle) => {
+      clearedHandle = handle;
+    };
+
+    const message = makeMessage({ content: '!chat hi' });
+    try {
+      await chat.execute(message, [], makeClient());
+    } finally {
+      global.setInterval = originalSetInterval;
+      global.clearInterval = originalClearInterval;
+    }
+
+    assert.equal(typeof capturedCallback, 'function');
+    assert.ok(capturedDelay > 0 && capturedDelay <= 10000, `expected a sub-10s refresh interval, got ${capturedDelay}`);
+    assert.equal(clearedHandle, fakeHandle);
+
+    // The initial call happens before the interval is even set up.
+    assert.equal(message._typed.count, 1);
+    capturedCallback();
+    assert.equal(message._typed.count, 2);
   });
 
   it('reconstructs conversation history by walking the reply chain', async () => {

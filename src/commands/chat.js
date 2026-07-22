@@ -54,8 +54,46 @@ const SYSTEM_PROMPT =
   "but don't worry about it otherwise -- it happens automatically either way.\n\n" +
   'Keep replies concise and suited for a Discord chat.';
 
+// Keys accepted by --model/-m, matching MeadBotAPI's Chat\ModelCatalog. The first is the default
+// (used whenever the flag is omitted).
+const MODEL_OPTIONS = [
+  { key: 'gpt', label: 'gpt-oss-120b' },
+  { key: 'ds', label: 'DeepSeek-V4-Flash' },
+];
+const MODEL_OPTIONS_TEXT = MODEL_OPTIONS.map(
+  ({ key, label }, i) => `'${key}' (${label}${i === 0 ? ', default' : ''})`
+).join(' or ');
+
 const USAGE =
-  'Usage: !chat <message> -- or reply to one of my chat responses with !chat <message> to continue that conversation.';
+  'Usage: !chat [--model gpt|ds] <message> -- or reply to one of my chat responses with !chat <message> to continue ' +
+  `that conversation. --model/-m picks the LLM: ${MODEL_OPTIONS_TEXT}.`;
+
+// How often to re-send the "typing..." indicator while waiting on MeadBotAPI, so it stays visible
+// for the whole wait instead of disappearing after Discord's ~10s timeout. Discord.js has no
+// "start typing and leave it on" API -- sendTyping() must be called repeatedly.
+const TYPING_REFRESH_INTERVAL_MS = 8000;
+
+// parseModelArgs(rawText) - pulls a leading "--model <key>"/"-m <key>" flag (case-insensitive) off
+// the raw (post-prefix) message text. Returns the resolved model key (null to use the default),
+// the remaining text to treat as the actual question, and `error` (a user-facing message) when
+// the flag is present but its value is missing or unrecognized.
+function parseModelArgs(rawText) {
+  const words = rawText.split(/\s+/);
+  const flag = words[0].toLowerCase();
+  if (flag !== '--model' && flag !== '-m') {
+    return { modelKey: null, userText: rawText, error: null };
+  }
+
+  const value = words[1] ? words[1].toLowerCase() : null;
+  if (value === null) {
+    return { modelKey: null, userText: '', error: `Missing a model after ${words[0]} -- use ${MODEL_OPTIONS_TEXT}.` };
+  }
+  if (!MODEL_OPTIONS.some((option) => option.key === value)) {
+    return { modelKey: null, userText: '', error: `Unknown model '${value}' -- use ${MODEL_OPTIONS_TEXT}.` };
+  }
+
+  return { modelKey: value, userText: words.slice(2).join(' '), error: null };
+}
 
 module.exports = {
   name: 'chat',
@@ -63,7 +101,17 @@ module.exports = {
   description:
     "Chat with an LLM assistant that has MeadBot's calculators as tools. Reply to one of its responses to continue the conversation.",
   async execute(message, args, client) {
-    const userText = stripCommandPrefix(message.content, client.prefix);
+    const rawText = stripCommandPrefix(message.content, client.prefix);
+    if (!rawText) {
+      await message.channel.send(USAGE);
+      return;
+    }
+
+    const { modelKey, userText, error: modelError } = parseModelArgs(rawText);
+    if (modelError) {
+      await message.channel.send(modelError);
+      return;
+    }
     if (!userText) {
       await message.channel.send(USAGE);
       return;
@@ -83,8 +131,12 @@ module.exports = {
     }
 
     const messages = [{ role: 'system', content: SYSTEM_PROMPT }, ...history, { role: 'user', content: userText }];
+    const body = modelKey ? { messages, model: modelKey } : { messages };
 
     await message.channel.sendTyping();
+    const typingInterval = setInterval(() => {
+      message.channel.sendTyping().catch(() => {});
+    }, TYPING_REFRESH_INTERVAL_MS);
 
     let payload;
     try {
@@ -95,13 +147,15 @@ module.exports = {
           'X-Api-Key': API_KEY,
           'X-User-Id': message.author.id,
         },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify(body),
         signal: AbortSignal.timeout(60000),
       });
       payload = await response.json();
     } catch (error) {
       await message.channel.send('Failed to reach the chat API: ' + describeFetchError(error));
       return;
+    } finally {
+      clearInterval(typingInterval);
     }
 
     if (payload.error) {
