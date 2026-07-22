@@ -455,9 +455,13 @@ describe('!chat', () => {
     const sent = [...message._replies, ...message._sent].join('\n');
     assert.ok(!sent.includes('<br>'));
     assert.ok(!sent.includes('\\approx'));
-    assert.ok(!sent.includes('---'));
     assert.ok(sent.includes('≈'));
-    assert.ok(sent.includes('Honey'));
+    // The pipe-delimited table is now reformatted into a padded, code-fenced table rather than
+    // stripped down to loose text -- see sanitizeMarkdownForDiscord.test.js for the detailed
+    // table-formatting assertions; this just checks the reply carries it through intact.
+    assert.ok(sent.includes('```'));
+    assert.ok(sent.includes('Ingredient') && sent.includes('Amount'));
+    assert.ok(sent.includes('Honey') && sent.includes('3.2lb'));
   });
 
   it('preserves original casing/punctuation from the raw message content, not the lowercased args array', async () => {

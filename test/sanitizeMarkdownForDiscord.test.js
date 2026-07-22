@@ -14,14 +14,47 @@ describe('sanitizeMarkdownForDiscord', () => {
     assert.equal(result, 'Honey3.2lb');
   });
 
-  it('drops GFM table separator rows entirely', () => {
+  it('reformats a GFM table (separator row and all) into a padded, code-fenced table', () => {
     const result = sanitizeMarkdownForDiscord('| Ingredient | Amount |\n|---|---|\n| Honey | 3.2lb |');
-    assert.equal(result, 'Ingredient | Amount\nHoney | 3.2lb');
+    assert.equal(result, '```\n' + 'Ingredient | Amount\n' + '-----------|-------\n' + 'Honey      | 3.2lb \n' + '```');
   });
 
-  it('strips the outer pipes from remaining table rows but keeps the cell content', () => {
+  it('leaves a single (non-tabular) pipe-delimited line alone instead of wrapping it', () => {
     const result = sanitizeMarkdownForDiscord('| Honey | 3.2lb | Notes here |');
     assert.equal(result, 'Honey | 3.2lb | Notes here');
+  });
+
+  it('reformats a run of 2+ unbracketed pipe-delimited rows into a padded, code-fenced table', () => {
+    const input =
+      'Addition | Timing | Fermaid O | Fermaid K | DAP\n' +
+      '1 | 24h after pitch | 0.62 g | 0.74 g | 0\n' +
+      '2 | 48h after pitch | 0.62 g | 0.74 g | 0';
+
+    const result = sanitizeMarkdownForDiscord(input);
+    const lines = result.split('\n');
+
+    assert.equal(lines[0], '```');
+    assert.equal(lines[lines.length - 1], '```');
+    assert.equal(lines.length, 6); // ``` + header + divider + 2 data rows + ```
+    assert.match(lines[2], /^-+\|-+\|-+\|-+\|-+$/);
+
+    // every non-fence, non-divider line should be the same length (columns actually align)
+    const contentLines = lines.slice(1, -1).filter((line) => !/^-+(\|-+)*$/.test(line));
+    assert.equal(new Set(contentLines.map((line) => line.length)).size, 1);
+
+    assert.ok(lines[1].includes('Addition') && lines[1].includes('DAP'));
+    assert.ok(lines[3].includes('1') && lines[3].includes('24h after pitch'));
+    assert.ok(lines[4].includes('2') && lines[4].includes('48h after pitch'));
+  });
+
+  it('does not wrap a single pipe-containing line with no matching neighbor', () => {
+    const result = sanitizeMarkdownForDiscord('Honey has ~80% sugar content, roughly.');
+    assert.equal(result, 'Honey has ~80% sugar content, roughly.');
+  });
+
+  it('does not reformat a table the model already wrapped in its own code fence', () => {
+    const input = '```\nA | B\nC | D\n```';
+    assert.equal(sanitizeMarkdownForDiscord(input), input);
   });
 
   it('converts common LaTeX operators to plain-text equivalents', () => {

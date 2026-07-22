@@ -59,9 +59,14 @@ loaded commands, so it's always accurate. Highlights:
   markdown tables/LaTeX/raw HTML tags, none of which render in Discord messages -- and since
   prompt instructions aren't fully reliable, `sanitizeMarkdownForDiscord` (`src/utils/`) also
   cleans up whatever slips through before the reply is sent: `<br>`/table tags become plain text,
-  GFM table separator rows are dropped, LaTeX-style notation (`\times`, `\text{...}`, etc.) is
-  converted to plain text, and bare URLs are wrapped in `<angle brackets>` so Discord doesn't
-  generate a link-preview embed for them. Reply to one of its responses with another
+  LaTeX-style notation (`\times`, `\text{...}`, etc.) is converted to plain text, and bare URLs
+  are wrapped in `<angle brackets>` so Discord doesn't generate a link-preview embed for them.
+  Markdown/GFM tables (and the model's more common habit of a bare `|`-delimited row per line
+  with no real table syntax at all) are reformatted into a padded, monospace table inside a code
+  block instead — the only way column alignment actually renders in Discord, since it doesn't
+  support `<table>` at all. `chunkMessage.js` (used to split long replies across multiple Discord
+  messages) is code-fence-aware, so a table like this never gets split across a message boundary.
+  Reply to one of its responses with another
   `!chat`/`!ask` to continue that conversation — MeadBot reconstructs history from the reply
   chain rather than keeping its own session state. Requires `MEADBOT_API_ROOT` and `CHAT_API_KEY`
   in `.env`; without them it reports itself as not configured. If MeadBotAPI's Fireworks balance
