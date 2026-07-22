@@ -32,6 +32,13 @@ const SYSTEM_PROMPT =
   'otherwise wiki-grounded -- use the wiki for judgment/technique and a calculator tool for any ' +
   "number in the same reply. If a calculator's required inputs are ambiguous or missing, ask the " +
   'user rather than guessing values to fill them in.\n\n' +
+  'NUMERIC CONSISTENCY RULE: when you add prose around a calculated number -- step-by-step ' +
+  'instructions, a comparison ("that\'s more than X"), a caveat ("not your full Y"), etc. -- only ' +
+  'state it if you have actually checked it against the numbers a calculator just returned. Do ' +
+  'not add a qualifier, comparison, or practical aside you have not verified is numerically ' +
+  'consistent with those numbers -- this has produced backwards or nonsensical statements before ' +
+  '(e.g. describing a smaller quantity as more than a larger one). If you are not sure a comparison ' +
+  'holds, state the calculated number plainly instead of editorializing around it.\n\n' +
   'MANDATORY WIKI-FIRST RULE: for any question involving mead-making judgment -- recipe design, ' +
   'technique, troubleshooting, ingredient choices, yeast/nutrient selection, timing, and ' +
   'anything similar that is not a pure calculation -- you MUST consult the wiki before ' +
