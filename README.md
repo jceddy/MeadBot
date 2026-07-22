@@ -70,8 +70,8 @@ loaded commands, so it's always accurate. Highlights:
   gets a friendly "I don't know the answer to that" reply instead of the raw backend error, and
   the bot owner is DMed (same recipient as an unhandled command error) with the question and a
   jump link to it, for investigation. A leading `--model`/`-m` flag picks which LLM MeadBotAPI
-  runs the question against — `gpt` (gpt-oss-120b, the default) or `ds` (DeepSeek-V4-Flash), e.g.
-  `!chat --model ds what's my ABV?` — an unrecognized value is rejected with the two valid
+  runs the question against — `ds` (DeepSeek-V4-Flash, the default) or `gpt` (gpt-oss-120b), e.g.
+  `!chat --model gpt what's my ABV?` — an unrecognized value is rejected with the two valid
   options rather than silently falling back to the default. The typing indicator is kept alive
   with a repeated `sendTyping()` every few seconds for the whole wait on MeadBotAPI, since Discord
   clears it after about 10 seconds and a chat reply (especially one involving several tool calls)

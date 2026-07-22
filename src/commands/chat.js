@@ -67,15 +67,15 @@ const SYSTEM_PROMPT =
 // Keys accepted by --model/-m, matching MeadBotAPI's Chat\ModelCatalog. The first is the default
 // (used whenever the flag is omitted).
 const MODEL_OPTIONS = [
-  { key: 'gpt', label: 'gpt-oss-120b' },
   { key: 'ds', label: 'DeepSeek-V4-Flash' },
+  { key: 'gpt', label: 'gpt-oss-120b' },
 ];
 const MODEL_OPTIONS_TEXT = MODEL_OPTIONS.map(
   ({ key, label }, i) => `'${key}' (${label}${i === 0 ? ', default' : ''})`
 ).join(' or ');
 
 const USAGE =
-  'Usage: !chat [--model gpt|ds] <message> -- or reply to one of my chat responses with !chat <message> to continue ' +
+  'Usage: !chat [--model ds|gpt] <message> -- or reply to one of my chat responses with !chat <message> to continue ' +
   `that conversation. --model/-m picks the LLM: ${MODEL_OPTIONS_TEXT}.`;
 
 // How often to re-send the "typing..." indicator while waiting on MeadBotAPI, so it stays visible
