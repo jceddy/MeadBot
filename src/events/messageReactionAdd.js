@@ -1,5 +1,5 @@
 const describeFetchError = require('../utils/describeFetchError.js');
-const { buildChatHistory, looksLikeChatInvocation } = require('../utils/buildChatHistory.js');
+const { buildChatHistory, looksLikeChatInvocation, assistantMessageText } = require('../utils/buildChatHistory.js');
 const notifyOwner = require('../utils/notifyOwner.js');
 const jumpLink = require('../utils/jumpLink.js');
 
@@ -88,7 +88,7 @@ module.exports = {
       return;
     }
 
-    const messages = [...history, { role: 'assistant', content: message.content }];
+    const messages = [...history, { role: 'assistant', content: assistantMessageText(message) }];
 
     const persistedNote = await postFeedback(messages, user, message);
 
