@@ -1,3 +1,9 @@
+// The line a CommonMark thematic break ("---", "***", "- - -", etc.) gets normalized to -- a
+// fixed-width run of a proper horizontal-line character, since Discord doesn't render thematic
+// breaks and the model's own dash count varies (as little as 3 characters, which barely reads as
+// a divider).
+const HORIZONTAL_RULE = '─'.repeat(24);
+
 // splitTableRow(line) - if line contains at least one "|", splits it into trimmed fields and
 // returns them; otherwise returns null. A leading/trailing "|" produces an empty first/last
 // field, same as a real GFM row's outer pipes would.
@@ -104,6 +110,12 @@ module.exports = function sanitizeMarkdownForDiscord(text) {
   // Remaining table rows keep their cells but lose the bracketing pipes -- not a real table,
   // but plainer text than "| a | b | c |".
   result = result.replace(/^([ \t]*)\|(.+)\|[ \t]*$/gm, (_match, indent, inner) => indent + inner.trim());
+
+  // A CommonMark "thematic break" (3+ of the same -, _, or * character, optionally spaced out,
+  // alone on its own line) doesn't render as a horizontal rule in Discord either -- it just shows
+  // up as a stray "---". Normalize it to a fixed-width line of a proper horizontal-line character
+  // instead, which reads clearly as a divider regardless of how short/sparse the model wrote it.
+  result = result.replace(/^[ \t]*([-_*])(?:[ \t]*\1){2,}[ \t]*$/gm, HORIZONTAL_RULE);
 
   // LaTeX-style math notation: handle the operators/wrappers actually seen, then a generic
   // fallback for any other \command{...} or bare \command that slips through.

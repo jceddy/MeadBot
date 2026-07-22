@@ -57,6 +57,33 @@ describe('sanitizeMarkdownForDiscord', () => {
     assert.equal(sanitizeMarkdownForDiscord(input), input);
   });
 
+  it('normalizes a bare "---" thematic break into a proper horizontal-line divider', () => {
+    const result = sanitizeMarkdownForDiscord('Before\n---\nAfter');
+    const lines = result.split('\n');
+
+    assert.equal(lines.length, 3);
+    assert.equal(lines[0], 'Before');
+    assert.equal(lines[2], 'After');
+    assert.ok(!lines[1].includes('-'));
+    assert.match(lines[1], /^─{10,}$/);
+  });
+
+  it('normalizes *** and spaced-out - - - thematic breaks the same way', () => {
+    const asterisks = sanitizeMarkdownForDiscord('a\n***\nb').split('\n')[1];
+    const spaced = sanitizeMarkdownForDiscord('a\n- - - -\nb').split('\n')[1];
+
+    assert.match(asterisks, /^─{10,}$/);
+    assert.match(spaced, /^─{10,}$/);
+    assert.equal(asterisks, spaced);
+  });
+
+  it('does not touch a bullet list, a short "--", or an inline "--" used as a dash', () => {
+    const bullets = '- Honey: 3.2 lb\n- Water: to 1 gal';
+    assert.equal(sanitizeMarkdownForDiscord(bullets), bullets);
+    assert.equal(sanitizeMarkdownForDiscord('--'), '--');
+    assert.equal(sanitizeMarkdownForDiscord('wait--what'), 'wait--what');
+  });
+
   it('converts common LaTeX operators to plain-text equivalents', () => {
     const result = sanitizeMarkdownForDiscord('OG \\times 131.25, a \\cdot b, a \\div b, 12 \\pm 1, \\approx 12');
     assert.equal(result, 'OG x 131.25, a * b, a / b, 12 ± 1, ≈ 12');

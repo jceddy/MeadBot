@@ -66,6 +66,9 @@ loaded commands, so it's always accurate. Highlights:
   block instead — the only way column alignment actually renders in Discord, since it doesn't
   support `<table>` at all. `chunkMessage.js` (used to split long replies across multiple Discord
   messages) is code-fence-aware, so a table like this never gets split across a message boundary.
+  A CommonMark thematic break (`---`, `***`, `- - -`, etc., meant as a horizontal rule) is
+  similarly normalized to a fixed-width line of a proper horizontal-line character, since Discord
+  doesn't render those either and the model's own dash count can be as short as 3 characters.
   Reply to one of its responses with another
   `!chat`/`!ask` to continue that conversation — MeadBot reconstructs history from the reply
   chain rather than keeping its own session state. Requires `MEADBOT_API_ROOT` and `CHAT_API_KEY`
