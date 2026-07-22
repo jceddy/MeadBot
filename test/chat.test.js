@@ -474,8 +474,48 @@ describe('!chat', () => {
 
     const [embed] = message._sent[0].embeds;
     assert.deepEqual(embed.data.fields, [
-      { name: 'Ingredient', value: 'Honey\nWater', inline: true },
-      { name: 'Amount', value: '3.2lb\n1 gal', inline: true },
+      { name: 'Ingredient: Honey', value: 'Amount: 3.2lb', inline: false },
+      { name: 'Ingredient: Water', value: 'Amount: 1 gal', inline: false },
+    ]);
+  });
+
+  it('sends a 4-column table as one field per data row, not one field per column', async () => {
+    // Regression test: an earlier one-field-per-column layout (inline: true) rendered as four
+    // separate stacked lists on Discord's mobile client instead of an aligned grid.
+    const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    global.fetch = async () => ({
+      json: async () => ({
+        error: false,
+        reply:
+          'Addition | Timing | Fermaid O | Fermaid K\n' +
+          '1 | 24h after pitch | 0.64 g | 0.75 g\n' +
+          '2 | 48h after pitch | 0.64 g | 0.75 g\n' +
+          '3 | 1/3 sugar break (~SG 1.079) | 0.64 g | 0.73 g',
+        messages: [],
+      }),
+    });
+
+    const message = makeMessage({ content: '!chat give me the schedule' });
+    await chat.execute(message, [], makeClient());
+
+    const [embed] = message._replies[0].embeds;
+    assert.equal(embed.data.fields.length, 3); // one per data row, not one per column
+    assert.deepEqual(embed.data.fields, [
+      {
+        name: 'Addition: 1',
+        value: 'Timing: 24h after pitch\nFermaid O: 0.64 g\nFermaid K: 0.75 g',
+        inline: false,
+      },
+      {
+        name: 'Addition: 2',
+        value: 'Timing: 48h after pitch\nFermaid O: 0.64 g\nFermaid K: 0.75 g',
+        inline: false,
+      },
+      {
+        name: 'Addition: 3',
+        value: 'Timing: 1/3 sugar break (~SG 1.079)\nFermaid O: 0.64 g\nFermaid K: 0.73 g',
+        inline: false,
+      },
     ]);
   });
 

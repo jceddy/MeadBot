@@ -66,16 +66,23 @@ loaded commands, so it's always accurate. Highlights:
   either and the model's own dash count can be as short as 3 characters. Separately,
   `parseTableSegments.js` finds markdown/GFM tables (and the model's more common habit of a bare
   `|`-delimited row per line with no real table syntax at all) and `chat.js` renders each one as a
-  Discord embed instead of plain text — the only way column alignment (and bold/italic emphasis
-  inside cells) actually renders, since Discord's message content doesn't support `<table>` at
-  all, and a monospace code-block table doesn't render markdown or reflow well on narrow (mobile)
-  widths. A block with no confirmed header (no GFM `---` separator row) and exactly two columns is
-  treated as a list of independent key/value facts (one embed field per row, e.g. "Target OG:
-  1.110"); any other table gets one embed field per column, its value the newline-joined column
-  data, which is what makes Discord's field grid read as aligned table columns. Reconstructed
-  conversation history (see below) and negative-feedback records fold a table reply's embed fields
-  back into plain text (`assistantMessageText` in `buildChatHistory.js`), so a table-only reply
-  (no surrounding text at all) isn't lost from context on a follow-up. Reply to one of its
+  Discord embed instead of plain text — the only way bold/italic emphasis inside cells actually
+  renders, since a monospace code-block table doesn't render markdown at all. Every embed field is
+  non-inline (one full-width field per row) rather than one field per column — Discord's mobile
+  client doesn't reliably pack inline fields side by side, so a multi-column table laid out that
+  way rendered as several separate stacked lists instead of a grid. A block with no confirmed
+  header (no GFM `---` separator row) and exactly two columns is treated as a list of independent
+  key/value facts (e.g. a field named "Target OG" with value "1.110"); any other table gets one
+  field per data row instead, named after its first column (e.g. "Addition: 1") with the remaining
+  columns listed as "header: value" lines in the field's value. Reconstructed conversation history
+  (see below) and negative-feedback records fold a table reply's embed fields back into plain text
+  (`assistantMessageText` in `buildChatHistory.js`), so a table-only reply (no surrounding text at
+  all) isn't lost from context on a follow-up. The system prompt also flatly prohibits ever
+  suggesting a fermentation-in-progress be deliberately stopped/interrupted (cold-crashing early,
+  stabilizing mid-ferment) to hit a target gravity — bad practice this community avoids, even
+  though it's a common enough suggestion in general brewing/mead training data that the model
+  needs to be told not to reach for it; back-sweetening after natural completion, yeast selection,
+  and step feeding are the legitimate alternatives it's pointed to instead. Reply to one of its
   responses with another
   `!chat`/`!ask` to continue that conversation — MeadBot reconstructs history from the reply
   chain rather than keeping its own session state. Requires `MEADBOT_API_ROOT` and `CHAT_API_KEY`
