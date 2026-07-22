@@ -4,97 +4,13 @@
 // a divider).
 const HORIZONTAL_RULE = '─'.repeat(24);
 
-// splitTableRow(line) - if line contains at least one "|", splits it into trimmed fields and
-// returns them; otherwise returns null. A leading/trailing "|" produces an empty first/last
-// field, same as a real GFM row's outer pipes would.
-function splitTableRow(line) {
-  if (!line.includes('|')) {
-    return null;
-  }
-  const fields = line.split('|').map((field) => field.trim());
-  return fields.length >= 2 ? fields : null;
-}
-
-// collectTableRun(lines, start) - starting at lines[start], collects consecutive lines that each
-// split into the same number of fields. Returns null unless at least 2 rows were found (a single
-// pipe-containing line isn't meaningfully tabular on its own).
-function collectTableRun(lines, start) {
-  const first = splitTableRow(lines[start]);
-  if (!first) {
-    return null;
-  }
-
-  const rows = [first];
-  let i = start + 1;
-  while (i < lines.length) {
-    const next = splitTableRow(lines[i]);
-    if (!next || next.length !== first.length) {
-      break;
-    }
-    rows.push(next);
-    i++;
-  }
-
-  return rows.length >= 2 ? { rows, nextIndex: i } : null;
-}
-
-// renderTable(rows) - lays out rows as a padded, code-fenced monospace table. Discord's message
-// content doesn't render markdown tables at all (no <table> support), so a fenced code block is
-// the only way column alignment actually shows up visually.
-function renderTable(rows) {
-  const columnCount = rows[0].length;
-  const widths = Array.from({ length: columnCount }, (_, col) => Math.max(...rows.map((row) => row[col].length)));
-  const renderRow = (row) => row.map((cell, col) => cell.padEnd(widths[col])).join(' | ');
-
-  return [
-    '```',
-    renderRow(rows[0]),
-    widths.map((w) => '-'.repeat(w)).join('-|-'),
-    ...rows.slice(1).map(renderRow),
-    '```',
-  ];
-}
-
-// formatPipeTables(text) - finds runs of 2+ consecutive lines that look like "|"-delimited table
-// rows (with or without bracketing pipes, and with or without a GFM separator row -- both already
-// normalized/stripped by the steps above) and rewrites them as a rendered table via renderTable().
-// Skips content already inside a fenced code block, in case the model wrapped a table in one
-// itself, so this doesn't produce nested/broken fences.
-function formatPipeTables(text) {
-  const lines = text.split('\n');
-  const output = [];
-  let inFence = false;
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-    if (line.trim().startsWith('```')) {
-      inFence = !inFence;
-      output.push(line);
-      i++;
-      continue;
-    }
-
-    const run = !inFence && collectTableRun(lines, i);
-    if (run) {
-      output.push(...renderTable(run.rows));
-      i = run.nextIndex;
-      continue;
-    }
-
-    output.push(line);
-    i++;
-  }
-
-  return output.join('\n');
-}
-
 // sanitizeMarkdownForDiscord(text) - cleans up markdown/HTML that Discord's message renderer
 // doesn't support but an LLM (trained mostly on GitHub/web markdown) tends to write anyway,
 // system-prompt instructions notwithstanding -- this is the deterministic backstop for whatever
 // slips through despite being told not to. Targets what's actually been observed in !chat output:
-// raw HTML tags (<br>, table tags), GFM table separator rows, pipe-delimited pseudo-tables, and
-// LaTeX-style math notation.
+// raw HTML tags (<br>, table tags), thematic breaks, and LaTeX-style math notation. Does NOT
+// touch "|"-delimited table content -- that's handled separately by parseTableSegments.js, which
+// needs to see the raw pipes/separator rows intact to tell a real table from plain text.
 module.exports = function sanitizeMarkdownForDiscord(text) {
   let result = text;
 
@@ -102,14 +18,6 @@ module.exports = function sanitizeMarkdownForDiscord(text) {
   // their content is already plain text, so drop the tags and keep the content.
   result = result.replace(/<br\s*\/?>/gi, '\n');
   result = result.replace(/<\/?(?:table|thead|tbody|tr|td|th|ul|ol|li|p|div|span)(?:\s[^>]*)?>/gi, '');
-
-  // GFM table separator rows (e.g. "|---|:--:|---|") carry no information once tables don't
-  // render as tables anyway; drop them outright, including the row's own newline so it doesn't
-  // leave a blank line behind.
-  result = result.replace(/^[ \t]*\|?[ \t:-]+\|[ \t:|-]*(?:\r?\n|$)/gm, '');
-  // Remaining table rows keep their cells but lose the bracketing pipes -- not a real table,
-  // but plainer text than "| a | b | c |".
-  result = result.replace(/^([ \t]*)\|(.+)\|[ \t]*$/gm, (_match, indent, inner) => indent + inner.trim());
 
   // A CommonMark "thematic break" (3+ of the same -, _, or * character, optionally spaced out,
   // alone on its own line) doesn't render as a horizontal rule in Discord either -- it just shows
@@ -168,9 +76,6 @@ module.exports = function sanitizeMarkdownForDiscord(text) {
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-
-  // Runs last so the column padding it adds survives the whitespace-collapsing step above.
-  result = formatPipeTables(result);
 
   return result;
 };

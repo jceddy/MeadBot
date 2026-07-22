@@ -35,6 +35,7 @@ function makeMessage({
   guildId = 'guild-1',
   channelId = 'channel-1',
   partial = false,
+  embeds = [],
 }) {
   return {
     id,
@@ -45,6 +46,7 @@ function makeMessage({
     channelId,
     guild: null, // forces notifyOwner down the client.users.fetch path, not guild.members.fetch
     partial,
+    embeds,
     fetch: async function () {
       this.partial = false;
       return this;
@@ -205,6 +207,40 @@ describe('messageReactionAdd', () => {
     assert.match(sentDms[0], /Negative feedback on a !chat reply from <@user-2>/);
     assert.match(sentDms[0], /https:\/\/discord\.com\/channels\/guild-1\/channel-1\/bot-reply-1/);
     assert.match(sentDms[0], /Persisted to the feedback database\./);
+  });
+
+  it("folds a table-only (embed) disliked reply's fields into the persisted feedback", async () => {
+    const handler = loadHandler({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    const client = makeClient([]);
+
+    const rootUserMessage = {
+      content: '!chat give me the basics',
+      author: { id: 'user-1' },
+      reference: null,
+    };
+    const byId = { root: rootUserMessage };
+    const message = makeMessage({
+      id: 'bot-reply-1',
+      content: '', // a table-only reply has no plain-text content at all -- see chat.js
+      authorId: 'bot-id',
+      reference: { messageId: 'root' },
+      byId,
+      embeds: [{ fields: [{ name: 'Target OG', value: '1.110' }] }],
+    });
+
+    let capturedBody;
+    global.fetch = async (_url, options) => {
+      capturedBody = JSON.parse(options.body);
+      return { json: async () => ({ error: false }) };
+    };
+
+    const reaction = makeReaction({ message });
+    await handler.execute(reaction, { id: 'user-2', bot: false }, client);
+
+    assert.deepEqual(capturedBody.messages, [
+      { role: 'user', content: 'give me the basics' },
+      { role: 'assistant', content: 'Target OG: 1.110' },
+    ]);
   });
 
   it('DMs the owner noting the failure when the feedback API returns an error', async () => {

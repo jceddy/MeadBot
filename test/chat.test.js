@@ -439,12 +439,12 @@ describe('!chat', () => {
     }
   });
 
-  it('sanitizes Discord-unsafe markdown/HTML out of the reply before sending it', async () => {
+  it('sanitizes Discord-unsafe markdown/HTML out of the plain-text part of the reply', async () => {
     const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
     global.fetch = async () => ({
       json: async () => ({
         error: false,
-        reply: 'OG \\approx 1.100<br>| Ingredient | Amount |\n|---|---|\n| Honey | 3.2lb |',
+        reply: 'OG \\approx 1.100<br>Adjust to taste.',
         messages: [],
       }),
     });
@@ -452,16 +452,54 @@ describe('!chat', () => {
     const message = makeMessage({ content: '!chat give me a recipe' });
     await chat.execute(message, [], makeClient());
 
-    const sent = [...message._replies, ...message._sent].join('\n');
-    assert.ok(!sent.includes('<br>'));
-    assert.ok(!sent.includes('\\approx'));
-    assert.ok(sent.includes('≈'));
-    // The pipe-delimited table is now reformatted into a padded, code-fenced table rather than
-    // stripped down to loose text -- see sanitizeMarkdownForDiscord.test.js for the detailed
-    // table-formatting assertions; this just checks the reply carries it through intact.
-    assert.ok(sent.includes('```'));
-    assert.ok(sent.includes('Ingredient') && sent.includes('Amount'));
-    assert.ok(sent.includes('Honey') && sent.includes('3.2lb'));
+    assert.deepEqual(message._replies, ['OG ≈ 1.100\nAdjust to taste.']);
+    assert.deepEqual(message._sent, []);
+  });
+
+  it('sends a table-shaped reply as a Discord embed instead of raw pipe-delimited text', async () => {
+    const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    global.fetch = async () => ({
+      json: async () => ({
+        error: false,
+        reply: 'Here you go:\n\n| Ingredient | Amount |\n|---|---|\n| Honey | 3.2lb |\n| Water | 1 gal |',
+        messages: [],
+      }),
+    });
+
+    const message = makeMessage({ content: '!chat give me a recipe' });
+    await chat.execute(message, [], makeClient());
+
+    assert.deepEqual(message._replies, ['Here you go:\n']);
+    assert.equal(message._sent.length, 1);
+
+    const [embed] = message._sent[0].embeds;
+    assert.deepEqual(embed.data.fields, [
+      { name: 'Ingredient', value: 'Honey\nWater', inline: true },
+      { name: 'Amount', value: '3.2lb\n1 gal', inline: true },
+    ]);
+  });
+
+  it('sends an unheaded 2-column reply as one embed field per row (key/value facts)', async () => {
+    const chat = loadChatCommand({ MEADBOT_API_ROOT: 'https://api.example.com', CHAT_API_KEY: 'secret' });
+    global.fetch = async () => ({
+      json: async () => ({
+        error: false,
+        reply: '**Target volume** | **1.18 gal**\n**Target OG** | **1.110**\n**Target ABV** | **12.3%**',
+        messages: [],
+      }),
+    });
+
+    const message = makeMessage({ content: '!chat give me the basics' });
+    await chat.execute(message, [], makeClient());
+
+    // No plain-text reply at all -- the whole reply was the table.
+    assert.equal(message._replies.length, 1);
+    const [embed] = message._replies[0].embeds;
+    assert.deepEqual(embed.data.fields, [
+      { name: '**Target volume**', value: '**1.18 gal**', inline: false },
+      { name: '**Target OG**', value: '**1.110**', inline: false },
+      { name: '**Target ABV**', value: '**12.3%**', inline: false },
+    ]);
   });
 
   it('preserves original casing/punctuation from the raw message content, not the lowercased args array', async () => {

@@ -22,6 +22,20 @@ function looksLikeChatInvocation(content, prefix) {
   return pattern.test(content);
 }
 
+// assistantMessageText(message) - a bot-authored message's content, with its embeds' fields (see
+// chat.js's buildTableEmbed(), which is what actually produces these for !chat's table replies)
+// folded in as plain text. content alone would lose a table reply entirely -- a table-only reply
+// (no surrounding text) has empty content, since the table itself lives in embeds, not content.
+// Used both for reconstructing history below and by messageReactionAdd.js, which needs the same
+// treatment for the disliked message itself (not just the history leading up to it).
+function assistantMessageText(message) {
+  const embedText = (message.embeds || [])
+    .map((embed) => (embed.fields || []).map((field) => `${field.name}: ${field.value}`).join('\n'))
+    .filter(Boolean)
+    .join('\n\n');
+  return [message.content, embedText].filter(Boolean).join('\n\n');
+}
+
 // buildChatHistory(message, client) - walks the Discord reply chain backwards from the message
 // this command was invoked as a reply to (if any), reconstructing it as an OpenAI-style
 // {role, content} message list, oldest first. Only plain text is preserved -- any tool-call
@@ -47,7 +61,7 @@ async function buildChatHistory(message, client) {
     }
 
     if (parent.author.id === client.user.id) {
-      history.unshift({ role: 'assistant', content: parent.content });
+      history.unshift({ role: 'assistant', content: assistantMessageText(parent) });
     } else {
       history.unshift({ role: 'user', content: stripCommandPrefix(parent.content, client.prefix) });
     }
@@ -59,4 +73,10 @@ async function buildChatHistory(message, client) {
   return { history, root };
 }
 
-module.exports = { buildChatHistory, stripCommandPrefix, looksLikeChatInvocation, MAX_HISTORY_MESSAGES };
+module.exports = {
+  buildChatHistory,
+  stripCommandPrefix,
+  looksLikeChatInvocation,
+  assistantMessageText,
+  MAX_HISTORY_MESSAGES,
+};

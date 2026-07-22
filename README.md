@@ -60,16 +60,23 @@ loaded commands, so it's always accurate. Highlights:
   prompt instructions aren't fully reliable, `sanitizeMarkdownForDiscord` (`src/utils/`) also
   cleans up whatever slips through before the reply is sent: `<br>`/table tags become plain text,
   LaTeX-style notation (`\times`, `\text{...}`, etc.) is converted to plain text, and bare URLs
-  are wrapped in `<angle brackets>` so Discord doesn't generate a link-preview embed for them.
-  Markdown/GFM tables (and the model's more common habit of a bare `|`-delimited row per line
-  with no real table syntax at all) are reformatted into a padded, monospace table inside a code
-  block instead — the only way column alignment actually renders in Discord, since it doesn't
-  support `<table>` at all. `chunkMessage.js` (used to split long replies across multiple Discord
-  messages) is code-fence-aware, so a table like this never gets split across a message boundary.
-  A CommonMark thematic break (`---`, `***`, `- - -`, etc., meant as a horizontal rule) is
-  similarly normalized to a fixed-width line of a proper horizontal-line character, since Discord
-  doesn't render those either and the model's own dash count can be as short as 3 characters.
-  Reply to one of its responses with another
+  are wrapped in `<angle brackets>` so Discord doesn't generate a link-preview embed for them. A
+  CommonMark thematic break (`---`, `***`, `- - -`, etc., meant as a horizontal rule) is normalized
+  to a fixed-width line of a proper horizontal-line character, since Discord doesn't render those
+  either and the model's own dash count can be as short as 3 characters. Separately,
+  `parseTableSegments.js` finds markdown/GFM tables (and the model's more common habit of a bare
+  `|`-delimited row per line with no real table syntax at all) and `chat.js` renders each one as a
+  Discord embed instead of plain text — the only way column alignment (and bold/italic emphasis
+  inside cells) actually renders, since Discord's message content doesn't support `<table>` at
+  all, and a monospace code-block table doesn't render markdown or reflow well on narrow (mobile)
+  widths. A block with no confirmed header (no GFM `---` separator row) and exactly two columns is
+  treated as a list of independent key/value facts (one embed field per row, e.g. "Target OG:
+  1.110"); any other table gets one embed field per column, its value the newline-joined column
+  data, which is what makes Discord's field grid read as aligned table columns. Reconstructed
+  conversation history (see below) and negative-feedback records fold a table reply's embed fields
+  back into plain text (`assistantMessageText` in `buildChatHistory.js`), so a table-only reply
+  (no surrounding text at all) isn't lost from context on a follow-up. Reply to one of its
+  responses with another
   `!chat`/`!ask` to continue that conversation — MeadBot reconstructs history from the reply
   chain rather than keeping its own session state. Requires `MEADBOT_API_ROOT` and `CHAT_API_KEY`
   in `.env`; without them it reports itself as not configured. If MeadBotAPI's Fireworks balance
