@@ -57,6 +57,14 @@ const SYSTEM_PROMPT =
   'produced bad advice before. Only answer from your own knowledge if you have actually checked ' +
   'the wiki first and it genuinely has nothing relevant, and if so say so explicitly rather than ' +
   'presenting the answer as if it came from the wiki.\n\n' +
+  'NEVER suggest deliberately stopping/interrupting a fermentation that is already in progress ' +
+  '(e.g. cold-crashing early, adding stabilizer mid-ferment) to hit a target gravity/ABV. Your ' +
+  'training data likely treats this as viable, but this community considers it bad practice -- ' +
+  'it risks a stuck/stressed fermentation, off-flavors, and refermentation in the bottle if it ' +
+  "doesn't fully halt. If a user wants a specific final gravity/sweetness/ABV, point them to " +
+  'legitimate approaches instead: choosing a yeast strain for the right alcohol tolerance, ' +
+  'back-sweetening after fermentation has naturally finished, or step feeding -- never describe ' +
+  'how to interrupt an in-progress fermentation, even if asked directly.\n\n' +
   'DISCORD FORMATTING RULES: Discord message content does not render markdown tables, LaTeX/math ' +
   'notation (e.g. \\text{...}, \\times), or raw HTML tags (e.g. <br>, <table>) -- they show up as ' +
   'literal characters, not formatting, and look broken. Never use any of those. Use plain prose ' +
@@ -128,12 +136,16 @@ function truncate(text, limit) {
 
 // buildTableEmbed(segment) - lays a parseTableSegments() table segment out as a Discord embed,
 // since Discord's message content doesn't render markdown tables at all (unlike embeds, which
-// also render bold/italic properly -- a code-block table wouldn't). 'keyValue' segments (an
-// unheaded 2-column block, e.g. "Target volume | 1.18 gal" next to "Target ABV | 12.3%" --
-// independent facts, not two columns of anything) get one field per row. 'columns' segments (a
-// real header, confirmed by a GFM separator row, or an unheaded 3+-column block) get one field
-// per column instead, each field's value the newline-joined column data -- the way to make
-// Discord's field grid actually read as aligned table columns.
+// also render bold/italic properly -- a code-block table wouldn't). Every field is non-inline
+// (one full-width field per row): an earlier one-field-per-column layout with inline:true looked
+// right on desktop, but Discord's mobile client doesn't reliably pack inline fields side by side
+// -- a 4-column table rendered as four separate stacked lists instead of a grid. Stacking rows
+// instead is less compact but renders identically and correctly on every client. 'keyValue'
+// segments (an unheaded 2-column block, e.g. "Target volume | 1.18 gal" next to "Target ABV |
+// 12.3%" -- independent facts, not two columns of anything) use the row's own two cells directly
+// as the field's name/value. 'columns' segments (a real header, confirmed by a GFM separator row,
+// or an unheaded 3+-column block) name each field after the first column's value (prefixed with
+// its header, e.g. "Addition: 1") and list the remaining columns as "header: value" lines.
 function buildTableEmbed(segment) {
   const fields =
     segment.mode === 'keyValue'
@@ -142,10 +154,16 @@ function buildTableEmbed(segment) {
           value: truncate(value, MAX_FIELD_VALUE_LENGTH),
           inline: false,
         }))
-      : segment.header.map((name, col) => ({
-          name: truncate(name, MAX_FIELD_NAME_LENGTH),
-          value: truncate(segment.dataRows.map((row) => row[col]).join('\n'), MAX_FIELD_VALUE_LENGTH),
-          inline: true,
+      : segment.dataRows.map((row) => ({
+          name: truncate(`${segment.header[0]}: ${row[0]}`, MAX_FIELD_NAME_LENGTH),
+          value: truncate(
+            row
+              .slice(1)
+              .map((cell, i) => `${segment.header[i + 1]}: ${cell}`)
+              .join('\n'),
+            MAX_FIELD_VALUE_LENGTH
+          ),
+          inline: false,
         }));
 
   return new EmbedBuilder().addFields(fields.slice(0, MAX_EMBED_FIELDS));
