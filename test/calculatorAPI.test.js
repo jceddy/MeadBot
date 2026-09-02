@@ -231,3 +231,128 @@ describe('ListYeastRequirements', () => {
     );
   });
 });
+
+describe('GetPrimingSugarIdentifier', () => {
+  it('resolves known aliases', () => {
+    assert.equal(
+      CalculatorAPI.GetPrimingSugarIdentifier('corn_sugar'),
+      CalculatorAPI.Constants.PRIMING_SUGARS.CORN_SUGAR
+    );
+    assert.equal(CalculatorAPI.GetPrimingSugarIdentifier('dextrose'), CalculatorAPI.Constants.PRIMING_SUGARS.CORN_SUGAR);
+    assert.equal(CalculatorAPI.GetPrimingSugarIdentifier('sugar'), CalculatorAPI.Constants.PRIMING_SUGARS.TABLE_SUGAR);
+    assert.equal(CalculatorAPI.GetPrimingSugarIdentifier('dme'), CalculatorAPI.Constants.PRIMING_SUGARS.DME);
+    assert.equal(CalculatorAPI.GetPrimingSugarIdentifier('honey'), CalculatorAPI.Constants.PRIMING_SUGARS.HONEY);
+  });
+
+  it('returns null for an unknown sugar', () => {
+    assert.equal(CalculatorAPI.GetPrimingSugarIdentifier('unobtainium'), null);
+  });
+});
+
+describe('CalculatePrimingSugar', () => {
+  it('matches the well-known 5gal/68F/2.4vol corn sugar reference figure (~4oz)', () => {
+    const result = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 68, 'f', 2.4, 'corn_sugar');
+    assert.equal(result.error, false);
+    assert.equal(result.residualCO2, 0.86);
+    assert.equal(result.primingSugarGrams, 116.9);
+    assert.equal(result.primingSugarOunces, 4.12);
+  });
+
+  it('needs less table sugar than corn sugar for the same batch/target', () => {
+    const cornSugar = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 68, 'f', 2.4, 'corn_sugar');
+    const tableSugar = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 68, 'f', 2.4, 'table_sugar');
+    assert.ok(tableSugar.primingSugarGrams < cornSugar.primingSugarGrams);
+  });
+
+  it('needs more DME and more honey than corn sugar for the same batch/target', () => {
+    const cornSugar = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 68, 'f', 2.4, 'corn_sugar');
+    const dme = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 68, 'f', 2.4, 'dme');
+    const honey = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 68, 'f', 2.4, 'honey');
+    assert.ok(dme.primingSugarGrams > cornSugar.primingSugarGrams);
+    assert.ok(honey.primingSugarGrams > cornSugar.primingSugarGrams);
+  });
+
+  it('converts Celsius temperatures before computing residual CO2', () => {
+    const fromF = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 68, 'f', 2.4, 'corn_sugar');
+    const fromC = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 20, 'c', 2.4, 'corn_sugar');
+    assert.equal(fromC.residualCO2, fromF.residualCO2);
+    assert.equal(fromC.primingSugarGrams, fromF.primingSugarGrams);
+  });
+
+  it('converts volume units before computing the priming amount', () => {
+    const fromGallons = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 68, 'f', 2.4, 'corn_sugar');
+    const fromLiters = CalculatorAPI.CalculatePrimingSugar(18.9270589455, 'liters', 68, 'f', 2.4, 'corn_sugar');
+    assert.equal(fromLiters.primingSugarGrams, fromGallons.primingSugarGrams);
+  });
+
+  it('clamps to zero grams instead of going negative when already at/above the target', () => {
+    // At 34F, residual CO2 is close to its regression maximum (~1.6ish vols) -- well above a
+    // deliberately-low 0.6 target, so no sugar should be needed rather than a negative amount.
+    const result = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 34, 'f', 0.6, 'corn_sugar');
+    assert.equal(result.error, false);
+    assert.equal(result.primingSugarGrams, 0);
+  });
+
+  it('errors on a non-numeric volume', () => {
+    const result = CalculatorAPI.CalculatePrimingSugar('a lot', 'gallons_us', 68, 'f', 2.4, 'corn_sugar');
+    assert.equal(result.error, true);
+    assert.equal(result.errorArgument, 'volume');
+    assert.equal(result.errorType, CalculatorAPI.Constants.ErrorTypes.IS_NAN);
+  });
+
+  it('errors on an unknown volume unit', () => {
+    const result = CalculatorAPI.CalculatePrimingSugar(5, 'furlongs', 68, 'f', 2.4, 'corn_sugar');
+    assert.equal(result.error, true);
+    assert.equal(result.errorArgument, 'volumeUnit');
+    assert.equal(result.errorType, CalculatorAPI.Constants.ErrorTypes.INVALID_ARGUMENTS);
+  });
+
+  it('errors on an out-of-range volume', () => {
+    const result = CalculatorAPI.CalculatePrimingSugar(0, 'gallons_us', 68, 'f', 2.4, 'corn_sugar');
+    assert.equal(result.error, true);
+    assert.equal(result.errorArgument, 'volume');
+    assert.equal(result.errorType, CalculatorAPI.Constants.ErrorTypes.RANGE);
+  });
+
+  it('errors on a non-numeric temperature', () => {
+    const result = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 'warm', 'f', 2.4, 'corn_sugar');
+    assert.equal(result.error, true);
+    assert.equal(result.errorArgument, 'temperature');
+    assert.equal(result.errorType, CalculatorAPI.Constants.ErrorTypes.IS_NAN);
+  });
+
+  it('errors on an unknown temperature unit', () => {
+    const result = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 68, 'kelvin', 2.4, 'corn_sugar');
+    assert.equal(result.error, true);
+    assert.equal(result.errorArgument, 'temperatureUnit');
+    assert.equal(result.errorType, CalculatorAPI.Constants.ErrorTypes.INVALID_ARGUMENTS);
+  });
+
+  it('errors on an out-of-range temperature', () => {
+    const result = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 150, 'f', 2.4, 'corn_sugar');
+    assert.equal(result.error, true);
+    assert.equal(result.errorArgument, 'temperature');
+    assert.equal(result.errorType, CalculatorAPI.Constants.ErrorTypes.RANGE);
+  });
+
+  it('errors on a non-numeric targetCO2', () => {
+    const result = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 68, 'f', 'fizzy', 'corn_sugar');
+    assert.equal(result.error, true);
+    assert.equal(result.errorArgument, 'targetCO2');
+    assert.equal(result.errorType, CalculatorAPI.Constants.ErrorTypes.IS_NAN);
+  });
+
+  it('errors on an out-of-range targetCO2', () => {
+    const result = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 68, 'f', 10, 'corn_sugar');
+    assert.equal(result.error, true);
+    assert.equal(result.errorArgument, 'targetCO2');
+    assert.equal(result.errorType, CalculatorAPI.Constants.ErrorTypes.RANGE);
+  });
+
+  it('errors on an unknown priming sugar', () => {
+    const result = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 68, 'f', 2.4, 'unicorn_dust');
+    assert.equal(result.error, true);
+    assert.equal(result.errorArgument, 'primingSugar');
+    assert.equal(result.errorType, CalculatorAPI.Constants.ErrorTypes.INVALID_ARGUMENTS);
+  });
+});

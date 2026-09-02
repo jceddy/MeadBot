@@ -949,3 +949,164 @@ exports.ListYeastRequirements = function () {
     };
   });
 };
+
+// GetPrimingSugarIdentifier(sugar) - return the priming sugar identifier that corresponds to a provided string
+exports.GetPrimingSugarIdentifier = function (sugar) {
+  switch (sugar) {
+    case 'corn_sugar':
+    case 'corn':
+    case 'dextrose':
+      return exports.Constants.PRIMING_SUGARS.CORN_SUGAR;
+    case 'table_sugar':
+    case 'sugar':
+    case 'sucrose':
+    case 'cane_sugar':
+      return exports.Constants.PRIMING_SUGARS.TABLE_SUGAR;
+    case 'dme':
+    case 'dry_malt_extract':
+    case 'malt_extract':
+      return exports.Constants.PRIMING_SUGARS.DME;
+    case 'honey':
+      return exports.Constants.PRIMING_SUGARS.HONEY;
+    default:
+      return null;
+  }
+};
+
+// CalculatePrimingSugar(volume, volumeUnit, temperature, temperatureUnit, targetCO2, primingSugar) -
+//   estimate the amount of priming sugar needed to carbonate a batch to a target CO2 level via
+//   bottle conditioning.
+//  - volume - batch volume, in volumeUnit units
+//  - volumeUnit - unit volume is expressed in (see GetVolumeUnit)
+//  - temperature - the beer/mead's temperature at/near the end of fermentation (used to estimate
+//                   how much CO2 is already dissolved), in temperatureUnit units
+//  - temperatureUnit - unit temperature is expressed in ('c'/'celcius' or 'f'/'fahrenheit')
+//  - targetCO2 - desired carbonation level, in volumes of CO2 (e.g. 2.4)
+//  - primingSugar - which sugar will be used to prime (see GetPrimingSugarIdentifier)
+// returns an object with the following fields:
+//  - error - true/false, depending on whether there was an error in the calculation, if true, errorMessage will be set and other fields may not be
+//            if false, errorMessage will not be set
+//  - errorMessage - a descriptive error message in case there was an error
+//  - errorArgument - the name of the argument that cause the error (if known)
+//  - errorType - set to some known values like isNaN, range
+//  - volume/volumeUnit - the batch volume, echoed back (volumeUnit expanded to its full VOLUME_UNIT_INFO entry)
+//  - temperature/temperatureUnit - the fermentation temperature used, echoed back
+//  - targetCO2 - the desired CO2 volumes used
+//  - residualCO2 - estimated CO2 volumes already dissolved in the beer/mead at that temperature
+//  - primingSugar - the chosen priming sugar's full PRIMING_SUGAR_INFO entry (name + factor)
+//  - primingSugarGrams - grams of the chosen priming sugar needed
+//  - primingSugarOunces - the same amount, in ounces
+//
+// Uses the Zahm & Nagel residual-CO2 regression and the standard corn-sugar-per-US-gallon-per-
+// CO2-volume priming formula (both from Hall, M.L. "Brew by the Numbers," Zymurgy Vol. 18 No. 2,
+// 1995); other sugars are derived from corn sugar via PRIMING_SUGAR_INFO's conversion factors.
+// These are long-standing homebrewing approximations, not exact figures, and overcarbonation from
+// a bad priming estimate can burst bottles -- always leave headspace, weigh priming sugar rather
+// than eyeballing it, and store priming/conditioning bottles somewhere that can contain a failure.
+exports.CalculatePrimingSugar = function (volume, volumeUnit, temperature, temperatureUnit, targetCO2, primingSugar) {
+  // validate volume argument
+  if (isNaN(volume)) {
+    return exports.MakeError('volume ' + volume + ' is not a number.', 'volume', 0, exports.Constants.ErrorTypes.IS_NAN);
+  }
+  volume = Number(volume);
+
+  // validate volumeUnit argument
+  var volumeUnitId = exports.GetVolumeUnit(volumeUnit);
+  if (volumeUnitId == null) {
+    return exports.MakeError(
+      'Unknown volume unit: ' + volumeUnit,
+      'volumeUnit',
+      1,
+      exports.Constants.ErrorTypes.INVALID_ARGUMENTS
+    );
+  }
+  var volumeUnitInfo = exports.Constants.VOLUME_UNIT_INFO[volumeUnitId];
+  var volumeLiters = volume * volumeUnitInfo.conversion;
+  if (volumeLiters <= 0 || volumeLiters > 5000) {
+    return exports.MakeError('volume is out of range: ' + volume, 'volume', 0, exports.Constants.ErrorTypes.RANGE);
+  }
+
+  // validate temperature argument
+  if (isNaN(temperature)) {
+    return exports.MakeError(
+      'temperature ' + temperature + ' is not a number.',
+      'temperature',
+      2,
+      exports.Constants.ErrorTypes.IS_NAN
+    );
+  }
+  temperature = Number(temperature);
+
+  // validate temperatureUnit argument, and convert to Fahrenheit for the residual-CO2 formula
+  var temperatureUnitId;
+  var temperatureF;
+  if (temperatureUnit === 'celcius' || temperatureUnit === 'c') {
+    temperatureUnitId = exports.Constants.TEMPERATURE_UNITS.CELSIUS;
+    temperatureF = (temperature * 9) / 5 + 32;
+  } else if (temperatureUnit === 'fahrenheit' || temperatureUnit === 'f') {
+    temperatureUnitId = exports.Constants.TEMPERATURE_UNITS.FAHRENHEIT;
+    temperatureF = temperature;
+  } else {
+    return exports.MakeError(
+      'Unknown temperature unit: ' + temperatureUnit,
+      'temperatureUnit',
+      3,
+      exports.Constants.ErrorTypes.INVALID_ARGUMENTS
+    );
+  }
+  // the residual-CO2 regression below is only fit over roughly this temperature range
+  if (temperatureF < 32 || temperatureF > 100) {
+    return exports.MakeError(
+      'temperature is out of range: ' + temperature,
+      'temperature',
+      2,
+      exports.Constants.ErrorTypes.RANGE
+    );
+  }
+
+  // validate targetCO2 argument
+  if (isNaN(targetCO2)) {
+    return exports.MakeError(
+      'targetCO2 ' + targetCO2 + ' is not a number.',
+      'targetCO2',
+      4,
+      exports.Constants.ErrorTypes.IS_NAN
+    );
+  }
+  targetCO2 = Number(targetCO2);
+  if (targetCO2 <= 0 || targetCO2 > 5) {
+    return exports.MakeError('targetCO2 is out of range: ' + targetCO2, 'targetCO2', 4, exports.Constants.ErrorTypes.RANGE);
+  }
+
+  // validate primingSugar argument
+  var primingSugarId = exports.GetPrimingSugarIdentifier(primingSugar);
+  if (primingSugarId == null) {
+    return exports.MakeError(
+      'Unknown priming sugar: ' + primingSugar,
+      'primingSugar',
+      5,
+      exports.Constants.ErrorTypes.INVALID_ARGUMENTS
+    );
+  }
+  var primingSugarInfo = exports.Constants.PRIMING_SUGAR_INFO[primingSugarId];
+
+  var residualCO2 = 3.0378 - 0.050062 * temperatureF + 0.00026555 * temperatureF * temperatureF;
+  var volumeGallonsUS =
+    volumeLiters / exports.Constants.VOLUME_UNIT_INFO[exports.Constants.VOLUME_UNITS.GALLONS_US].conversion;
+  var cornSugarGrams = 15.195 * volumeGallonsUS * (targetCO2 - residualCO2);
+  // can't add negative sugar -- a beer/mead already at or above the target just needs none
+  var primingSugarGrams = Math.max(0, cornSugarGrams * primingSugarInfo.factor);
+
+  return {
+    error: false,
+    volume: volume,
+    volumeUnit: volumeUnitInfo,
+    temperature: temperature,
+    temperatureUnit: exports.Constants.TEMPERATURE_UNIT_NAMES[temperatureUnitId],
+    targetCO2: targetCO2,
+    residualCO2: Math.round(residualCO2 * 100) / 100,
+    primingSugar: primingSugarInfo,
+    primingSugarGrams: Math.round(primingSugarGrams * 10) / 10,
+    primingSugarOunces: Math.round((primingSugarGrams / 28.349523125) * 100) / 100,
+  };
+};
