@@ -155,6 +155,15 @@ describe('ConvertTemperature', () => {
     assert.equal(result.error, true);
     assert.equal(result.errorArgument, 'fromUnit');
   });
+
+  it('accepts both the correct ("celsius") and legacy ("celcius") spellings', () => {
+    const correct = CalculatorAPI.ConvertTemperature(100, 'celsius');
+    const legacy = CalculatorAPI.ConvertTemperature(100, 'celcius');
+    assert.equal(correct.error, false);
+    assert.equal(correct.toTemperature, 212);
+    assert.equal(legacy.error, false);
+    assert.equal(legacy.toTemperature, 212);
+  });
 });
 
 describe('ComputeDelle', () => {
@@ -277,6 +286,14 @@ describe('CalculatePrimingSugar', () => {
     const fromC = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 20, 'c', 2.4, 'corn_sugar');
     assert.equal(fromC.residualCO2, fromF.residualCO2);
     assert.equal(fromC.primingSugarGrams, fromF.primingSugarGrams);
+  });
+
+  it('accepts both the correct ("celsius") and legacy ("celcius") spellings', () => {
+    const correct = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 20, 'celsius', 2.4, 'corn_sugar');
+    const legacy = CalculatorAPI.CalculatePrimingSugar(5, 'gallons_us', 20, 'celcius', 2.4, 'corn_sugar');
+    assert.equal(correct.error, false);
+    assert.equal(legacy.error, false);
+    assert.equal(correct.primingSugarGrams, legacy.primingSugarGrams);
   });
 
   it('converts volume units before computing the priming amount', () => {

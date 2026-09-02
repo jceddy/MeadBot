@@ -9,8 +9,8 @@ const HELP_TEXT = {
   '-t': "The beer/mead's temperature at/near the end of fermentation, as a number (default is 68).\nExample: !prime -t 65",
   '--temperature':
     "The beer/mead's temperature at/near the end of fermentation, as a number (default is 68).\nExample: !prime -t 65",
-  '-f': 'Temperature unit, "f"/"fahrenheit" or "c"/"celcius" (default is "f").\nExample: !prime -f c',
-  '--temperature_unit': 'Temperature unit, "f"/"fahrenheit" or "c"/"celcius" (default is "f").\nExample: !prime -f c',
+  '-f': 'Temperature unit, "f"/"fahrenheit" or "c"/"celsius" (default is "f").\nExample: !prime -f c',
+  '--temperature_unit': 'Temperature unit, "f"/"fahrenheit" or "c"/"celsius" (default is "f").\nExample: !prime -f c',
   '-c': 'Target carbonation level in volumes of CO2, e.g. 2.4 (default is 2.4).\nExample: !prime -c 2.8',
   '--target_co2': 'Target carbonation level in volumes of CO2, e.g. 2.4 (default is 2.4).\nExample: !prime -c 2.8',
   '-s': 'Priming sugar to use: "corn_sugar", "table_sugar", "dme", or "honey" (default is "corn_sugar").\nExample: !prime -s honey',

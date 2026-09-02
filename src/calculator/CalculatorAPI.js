@@ -649,7 +649,7 @@ exports.ConvertTemperature = function (fromTemperature, fromUnit) {
   var from_unit = null;
   var to_unit = null;
   var to_temp;
-  if (fromUnit == 'celcius' || fromUnit == 'c') {
+  if (fromUnit == 'celsius' || fromUnit == 'celcius' || fromUnit == 'c') {
     from_unit = exports.Constants.TEMPERATURE_UNITS.CELSIUS;
     to_unit = exports.Constants.TEMPERATURE_UNITS.FAHRENHEIT;
     to_temp = Math.round(((Number(fromTemperature) * 9) / 5 + 32) * 100) / 100;
@@ -980,7 +980,7 @@ exports.GetPrimingSugarIdentifier = function (sugar) {
 //  - volumeUnit - unit volume is expressed in (see GetVolumeUnit)
 //  - temperature - the beer/mead's temperature at/near the end of fermentation (used to estimate
 //                   how much CO2 is already dissolved), in temperatureUnit units
-//  - temperatureUnit - unit temperature is expressed in ('c'/'celcius' or 'f'/'fahrenheit')
+//  - temperatureUnit - unit temperature is expressed in ('c'/'celsius' or 'f'/'fahrenheit')
 //  - targetCO2 - desired carbonation level, in volumes of CO2 (e.g. 2.4)
 //  - primingSugar - which sugar will be used to prime (see GetPrimingSugarIdentifier)
 // returns an object with the following fields:
@@ -1040,7 +1040,7 @@ exports.CalculatePrimingSugar = function (volume, volumeUnit, temperature, tempe
   // validate temperatureUnit argument, and convert to Fahrenheit for the residual-CO2 formula
   var temperatureUnitId;
   var temperatureF;
-  if (temperatureUnit === 'celcius' || temperatureUnit === 'c') {
+  if (temperatureUnit === 'celsius' || temperatureUnit === 'celcius' || temperatureUnit === 'c') {
     temperatureUnitId = exports.Constants.TEMPERATURE_UNITS.CELSIUS;
     temperatureF = (temperature * 9) / 5 + 32;
   } else if (temperatureUnit === 'fahrenheit' || temperatureUnit === 'f') {
