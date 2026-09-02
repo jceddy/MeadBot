@@ -332,3 +332,26 @@ exports.DRY_FG_OG_VALUES = [1.0, 1.04, 1.1, 1.144];
 
 // FGs for dry FG esimate
 exports.DRY_FG_FG_VALUES = [1.0, 0.998, 0.995, 0.99];
+
+// priming sugar identifiers that index into the PRIMING_SUGAR_INFO array
+exports.PRIMING_SUGARS = {
+  CORN_SUGAR: 0,
+  TABLE_SUGAR: 1,
+  DME: 2,
+  HONEY: 3,
+};
+
+// priming sugars the calculator function knows about, along with each one's conversion factor
+// relative to corn sugar (dextrose), which is defined as 1.00 -- multiply the corn-sugar-
+// equivalent grams a priming calculation produces by this factor to get the equivalent weight of
+// that sugar. Sourced from widely-published homebrewing references (the residual-CO2 regression
+// and corn-sugar formula from Hall, M.L. "Brew by the Numbers," Zymurgy Vol. 18 No. 2, 1995, plus
+// the conversion ratios commonly cited by community priming calculators) -- these are long-
+// standing approximations, not exact physical constants, so don't expect a different calculator
+// to match to the decimal.
+exports.PRIMING_SUGAR_INFO = [
+  { name: 'Corn Sugar (Dextrose)', factor: 1.0 },
+  { name: 'Table Sugar (Sucrose)', factor: 0.9 },
+  { name: 'DME (Dry Malt Extract)', factor: 1.33 },
+  { name: 'Honey', factor: 1.15 },
+];

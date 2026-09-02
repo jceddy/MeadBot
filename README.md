@@ -41,7 +41,8 @@ loaded commands, so it's always accurate. Highlights:
 - Mead-brewing calculators: `!abv`, `!calories`, `!delle`, `!build-batch`, `!calculate-nutrients`,
   `!potential-alcohol`, `!calculate-blend`, `!calculate-mead`, `!sugar`, `!convert-volume`,
   `!convert-honey-units`, `!convert-temp`, `!gallon`, `!liter`, `!list-volume-units`,
-  `!list-yeast-requirements`.
+  `!list-yeast-requirements`, `!prime` (priming sugar needed to hit a target CO2 carbonation
+  level, given batch volume/temperature and a choice of corn sugar/table sugar/DME/honey).
 - Community/fun: `!cat`, `!dog`, `!slug`, `!quip`, `!suggest`, and a handful of image/link
   commands (`!kahm`, `!yeet`, `!closure`, `!bees`, `!taco`, etc).
 - Info: `!wiki`, `!doc`, `!recipes`, `!mmm`, `!eligibility`, `!version`, `!funding`.
