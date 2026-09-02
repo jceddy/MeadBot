@@ -39,7 +39,7 @@ MeadBot uses prefix commands (default prefix: `!`, configurable via `PREFIX` in 
 loaded commands, so it's always accurate. Highlights:
 
 - Mead-brewing calculators: `!abv`, `!calories`, `!delle`, `!build-batch`, `!calculate-nutrients`,
-  `!potential-alcohol`, `!calculate-blend`, `!calculate-mead`, `!sugar`, `!convert-volume`,
+  `!potential-alcohol`, `!calculate-blend`, `!calculate-mead`, `!prime`, `!sugar`, `!convert-volume`,
   `!convert-honey-units`, `!convert-temp`, `!gallon`, `!liter`, `!list-volume-units`,
   `!list-yeast-requirements`.
 - Community/fun: `!cat`, `!dog`, `!slug`, `!quip`, `!suggest`, and a handful of image/link
